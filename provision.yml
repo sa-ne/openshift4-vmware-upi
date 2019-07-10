@@ -1,0 +1,36 @@
+---
+- name: Provision OpenShift 4 Environment
+  hosts: localhost
+  vars_files:
+    - vault.yml
+    - base64.yml
+  roles:
+    - role: ipa
+      tags:
+        - ipa
+    - role: vmware
+      tags:
+        - vmware
+
+- name: Setup Loadbalancer Host
+  hosts: loadbalancer
+  become: yes
+  roles:
+    - role: dhcpd
+      tags:
+        - dhcpd
+    - role: haproxy
+      tags:
+        - haproxy
+    - role: httpd
+      tags:
+        - httpd
+
+#- name: Boot CoreOS Nodes
+#  hosts: localhost
+#  vars_files:
+#    - vault.yml
+#  roles:
+#   - role: boot-instances
+#     tags:
+#        - boot-instances 

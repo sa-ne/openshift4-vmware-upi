@@ -1,0 +1,87 @@
+- name: Create Cluster Folder
+  vcenter_folder:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: no
+    datacenter_name: "{{ vcenter_datacenter }}"
+    folder_name: "{{ cluster_name }}"
+    folder_type: vm
+    state: present
+
+- name: Upload RHCOS OVA Template
+  vmware_deploy_ovf:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: no
+    datacenter: "{{ vcenter_datacenter }}"
+    cluster: "{{ vcenter_cluster }}"
+    datastore: "{{ vcenter_datastore }}"
+    folder: "/{{ vcenter_datacenter }}/vm/{{ cluster_name }}"
+    allow_duplicates: no
+    disk_provisioning: thin
+    name: "{{ ova_vm_name }}"
+    ova: "{{ ova_path }}"
+    power_on: no
+
+- name: Create VMs
+  vmware_guest:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: no
+    cluster: "{{ vcenter_cluster }}"
+    datacenter: "{{ vcenter_datacenter }}"
+    datastore: "{{ vcenter_datastore }}"
+    folder: "/{{ vcenter_datacenter }}/vm/{{ cluster_name }}"
+    guest_id: rhel7_64Guest
+    hardware:
+      memory_mb: "{{ hostvars[item].memory }}"
+      num_cpus: "{{ hostvars[item].cores }}"
+      num_cpu_cores_per_socket: "{{ hostvars[item].cores }}"
+    name: "{{ item }}.{{ base_domain }}"
+    state: present
+    template: "{{ ova_vm_name }}"
+    customvalues:
+      - key: "guestinfo.ignition.config.data"
+        value: "{{ hostvars[item].base64_config_data }}"
+      - key: "guestinfo.ignition.config.data.encoding"
+        value: base64
+      - key: "disk.EnableUUID"
+        value: "TRUE"
+  register: vmware_guest_results
+  with_items:
+    - "{{ groups[provision_group] }}"
+
+- name: Get VM Facts
+  vmware_guest_facts:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: no
+    datacenter: "{{ vcenter_datacenter }}"
+    name: "{{ item }}.{{ base_domain }}"
+  register: vmware_guest_facts_results
+  with_items:
+    - "{{ groups[provision_group] }}"
+
+- name: Combine Hostname/IP/MAC into Dictionary for Easy Lookup
+  set_fact:
+    host_mac_list: >-
+      {{
+        host_mac_list | default([]) +
+        [
+          {
+            'name': item.item,
+            'mac': item.instance.hw_eth0.macaddress,
+            'ip': hostvars[item.item]['ip']
+          }
+        ]
+      }}
+  with_items:
+    - "{{ vmware_guest_facts_results.results }}"
+
+- name: Debug host_mac_list
+  debug:
+    var: host_mac_list

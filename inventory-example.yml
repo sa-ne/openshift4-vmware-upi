@@ -1,0 +1,170 @@
+---
+all:
+  vars:
+    provision_group: pg
+    ova_path: /tmp/rhcos-4.1.0-x86_64-vmware.ova
+    ova_vm_name: rhcos-4.1.0-x86_64-vmware
+    cluster_name: vmware-upi
+    base_domain: vmware-upi.ocp.pwc.umbrella.local
+    dhcp_server_dns_servers: 172.16.10.11
+    dhcp_server_gateway: 172.16.10.254
+    dhcp_server_subnet_mask: 255.255.255.0
+    dhcp_server_subnet: 172.16.10.0
+    load_balancer_ip: 172.16.10.116
+  children:
+    webserver:
+      hosts:
+        lb.vmware-upi.ocp.pwc.umbrella.local:
+          httpd_port: 8888
+    loadbalancer:
+      hosts:
+        lb.vmware-upi.ocp.pwc.umbrella.local:
+    pg:
+      hosts:
+        bootstrap:
+          base64_config_data: "{{ base64_bootstrap }}"
+          ip: 172.16.10.131
+          memory: 24576
+          sockets: 1
+          cores: 4
+          iso: "{{ iso_name }}"
+          disks:
+          - name: os
+            bootable: yes
+            size: 140GiB
+            format: cow
+            interface: virtio_scsi
+            storage_domain: nfs-vms
+          nics:
+          - name: eth0
+            network: lab
+            interface: virtio
+        master0:
+          base64_config_data: "{{ base64_master }}"
+          etcd_name: etcd-0
+          ip: 172.16.10.132
+          memory: 24576
+          sockets: 1
+          cores: 4
+          iso: "{{ iso_name }}"
+          disks:
+          - name: os
+            bootable: yes
+            size: 140GiB
+            format: cow
+            interface: virtio_scsi
+            storage_domain: nfs-vms
+          nics:
+          - name: eth0
+            network: lab
+            interface: virtio
+        master1:
+          base64_config_data: "{{ base64_master }}"
+          etcd_name: etcd-1
+          ip: 172.16.10.133
+          memory: 24576
+          sockets: 1
+          cores: 4
+          iso: "{{ iso_name }}"
+          disks:
+          - name: os
+            bootable: yes
+            size: 140GiB
+            format: cow
+            interface: virtio_scsi
+            storage_domain: nfs-vms
+          nics:
+          - name: eth0
+            network: lab
+            interface: virtio
+        master2:
+          base64_config_data: "{{ base64_master }}"
+          etcd_name: etcd-2
+          ip: 172.16.10.134
+          memory: 24576
+          sockets: 1
+          cores: 4
+          iso: "{{ iso_name }}"
+          disks:
+          - name: os
+            bootable: yes
+            size: 140GiB
+            format: cow
+            interface: virtio_scsi
+            storage_domain: nfs-vms
+          nics:
+          - name: eth0
+            network: lab
+            interface: virtio
+        worker0:
+          base64_config_data: "{{ base64_worker }}"
+          ip: 172.16.10.135
+          memory: 24576
+          sockets: 1
+          cores: 4
+          iso: "{{ iso_name }}"
+          disks:
+          - name: os
+            bootable: yes
+            size: 140GiB
+            format: cow
+            interface: virtio_scsi
+            storage_domain: nfs-vms
+          nics:
+          - name: eth0
+            network: lab
+            interface: virtio
+        worker1:
+          base64_config_data: "{{ base64_worker }}"
+          ip: 172.16.10.136
+          memory: 24576
+          sockets: 1
+          cores: 4
+          iso: "{{ iso_name }}"
+          disks:
+          - name: os
+            bootable: yes
+            size: 140GiB
+            format: cow
+            interface: virtio_scsi
+            storage_domain: nfs-vms
+          nics:
+          - name: eth0
+            network: lab
+            interface: virtio
+        worker2:
+          base64_config_data: "{{ base64_worker }}"
+          ip: 172.16.10.137
+          memory: 24576
+          sockets: 1
+          cores: 4
+          iso: "{{ iso_name }}"
+          disks:
+          - name: os
+            bootable: yes
+            size: 140GiB
+            format: cow
+            interface: virtio_scsi
+            storage_domain: nfs-vms
+          nics:
+          - name: eth0
+            network: lab
+            interface: virtio
+        worker3:
+          base64_config_data: "{{ base64_worker }}"
+          ip: 172.16.10.138
+          memory: 24576
+          sockets: 1
+          cores: 4
+          iso: "{{ iso_name }}"
+          disks:
+          - name: os
+            bootable: yes
+            size: 140GiB
+            format: cow
+            interface: virtio_scsi
+            storage_domain: nfs-vms
+          nics:
+          - name: eth0
+            network: lab
+            interface: virtio

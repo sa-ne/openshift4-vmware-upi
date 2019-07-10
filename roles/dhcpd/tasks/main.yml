@@ -1,0 +1,20 @@
+- name: Install DHCP Server Package
+  yum:
+    name:
+      - dhcp
+    state: latest
+
+- name: Copy dhcpd.conf Template
+  template:
+    src: templates/dhcpd.conf.j2
+    dest: /etc/dhcp/dhcpd.conf
+    owner: root
+    group: root
+    mode: 0644
+    setype: dhcp_etc_t
+
+- name: Enable/Start dhcpd Service
+  systemd:
+    name: dhcpd
+    state: started
+    enabled: yes

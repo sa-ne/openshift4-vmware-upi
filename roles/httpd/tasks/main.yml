@@ -1,0 +1,41 @@
+- name: Install Packages
+  yum:
+    name:
+      - httpd
+      - php
+      - policycoreutils-python
+    state: latest
+
+- name: Allow httpd to listen on TCP port 8888
+  seport:
+    ports: "{{ httpd_port }}"
+    proto: tcp
+    setype: http_port_t
+    state: present
+
+- name: Copy httpd.conf Template
+  template:
+    src: templates/httpd.conf.j2
+    dest: /etc/httpd/conf/httpd.conf
+    owner: root
+    group: root
+    mode: 0644
+    setype: httpd_config_t
+
+- name: Copy Ignition PHP Script
+  copy:
+    src: files/ignition-downloader.php
+    dest: /var/www/html/ignition-downloader.php
+    owner: root
+    group: root
+    mode: 0644
+    setype: httpd_sys_content_t
+
+- name: Restore SELinux Contexts in Document Root
+  shell: restorecon -R /var/www/html
+
+- name: Enable/Start httpd Service
+  systemd:
+    name: httpd
+    state: started
+    enabled: yes

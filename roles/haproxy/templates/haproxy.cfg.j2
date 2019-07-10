@@ -1,0 +1,158 @@
+#---------------------------------------------------------------------
+# Example configuration for a possible web application.  See the
+# full configuration options online.
+#
+#   http://haproxy.1wt.eu/download/1.4/doc/configuration.txt
+#
+#---------------------------------------------------------------------
+
+#---------------------------------------------------------------------
+# Global settings
+#---------------------------------------------------------------------
+global
+    # to have these messages end up in /var/log/haproxy.log you will
+    # need to:
+    #
+    # 1) configure syslog to accept network log events.  This is done
+    #    by adding the '-r' option to the SYSLOGD_OPTIONS in
+    #    /etc/sysconfig/syslog
+    #
+    # 2) configure local2 events to go to the /var/log/haproxy.log
+    #   file. A line like the following can be added to
+    #   /etc/sysconfig/syslog
+    #
+    #    local2.*                       /var/log/haproxy.log
+    #
+    log         127.0.0.1 local2
+
+    chroot      /var/lib/haproxy
+    pidfile     /var/run/haproxy.pid
+    maxconn     4000
+    user        haproxy
+    group       haproxy
+    daemon
+
+    # turn on stats unix socket
+    stats socket /var/lib/haproxy/stats
+
+#---------------------------------------------------------------------
+# common defaults that all the 'listen' and 'backend' sections will
+# use if not designated in their block
+#---------------------------------------------------------------------
+defaults
+    mode                    http
+    log                     global
+    option                  httplog
+    option                  dontlognull
+    option http-server-close
+    option forwardfor       except 127.0.0.0/8
+    option                  redispatch
+    retries                 3
+    timeout http-request    10s
+    timeout queue           1m
+    timeout connect         10s
+    timeout client          1m
+    timeout server          1m
+    timeout http-keep-alive 10s
+    timeout check           10s
+    maxconn                 3000
+
+frontend frontend_6443
+    bind *:6443
+    mode tcp
+    option tcplog
+    timeout client 1m
+    default_backend backend_6443
+
+frontend frontend_22623
+    bind *:22623
+    mode tcp
+    option tcplog
+    timeout client 1m
+    default_backend backend_22623
+
+frontend frontend_443
+    bind *:443
+    mode tcp
+    option tcplog
+    timeout client 1m
+    default_backend backend_443
+
+frontend backend_80
+    bind *:80
+    mode tcp
+    option tcplog
+    timeout client 1m
+    default_backend backend_80
+
+backend backend_6443
+    mode tcp
+    option tcplog
+    option log-health-checks
+    option redispatch
+    log global
+    balance roundrobin
+    timeout connect 10s
+    timeout server 1m
+    # Remove the bootstrap server after ./openshift-install wait-for bootstrap-complete
+    server bootstrap {{ hostvars['bootstrap'].ip }}:6443 check
+{% for item in groups[provision_group] %}
+{% if 'master' in item %}
+    server {{ item }} {{ hostvars[item].ip }}:6443 check
+{% endif %}
+{% endfor %}
+
+backend backend_22623
+    mode tcp
+    option tcplog
+    option log-health-checks
+    option redispatch
+    log global
+    balance roundrobin
+    timeout connect 10s
+    timeout server 1m
+    # Remove the bootstrap server after ./openshift-install wait-for bootstrap-complete
+    server bootstrap {{ hostvars['bootstrap'].ip }}:22623 check
+{% for item in groups[provision_group] %}
+{% if 'master' in item %}
+    server {{ item }} {{ hostvars[item].ip }}:22623 check
+{% endif %}
+{% endfor %}
+
+backend backend_443
+    mode tcp
+    option tcplog
+    option log-health-checks
+    option redispatch
+    log global
+    balance roundrobin
+    timeout connect 10s
+    timeout server 1m
+{% for item in groups[provision_group] %}
+{% if 'worker' in item %}
+    server {{ item }} {{ hostvars[item].ip }}:443 check
+{% endif %}
+{% endfor %}
+
+backend backend_80
+    mode tcp
+    option tcplog
+    option log-health-checks
+    option redispatch
+    log global
+    balance roundrobin
+    timeout connect 10s
+    timeout server 1m
+{% for item in groups[provision_group] %}
+{% if 'worker' in item %}
+    server {{ item }} {{ hostvars[item].ip }}:80 check
+{% endif %}
+{% endfor %}
+
+# Enable stats on :9000/haproxy_stats (no auth required)
+
+listen stats
+    bind 0.0.0.0:9000
+    mode http
+    stats enable
+    stats uri /haproxy_stats
