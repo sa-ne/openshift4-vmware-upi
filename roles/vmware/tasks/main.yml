@@ -40,6 +40,7 @@
       memory_mb: "{{ hostvars[item].memory }}"
       num_cpus: "{{ hostvars[item].cores }}"
       num_cpu_cores_per_socket: "{{ hostvars[item].cores }}"
+      version: 14
     name: "{{ item }}.{{ base_domain }}"
     state: present
     template: "{{ ova_vm_name }}"

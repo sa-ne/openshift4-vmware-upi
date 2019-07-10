@@ -8,6 +8,7 @@
     datacenter: "{{ vcenter_datacenter }}"
     name: "{{ item }}.{{ base_domain }}"
     state: absent
+    force: yes
   register: vmware_guest_results
   with_items:
     - "{{ groups[provision_group] }}" 
