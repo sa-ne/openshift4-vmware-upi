@@ -51,6 +51,8 @@
         value: base64
       - key: "disk.EnableUUID"
         value: "TRUE"
+      - key: "sched.cpu.latencySensitivity"
+        value: "High"
   register: vmware_guest_results
   with_items:
     - "{{ groups[provision_group] }}"
