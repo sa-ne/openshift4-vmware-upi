@@ -40,12 +40,12 @@ All hostnames must use the following format:
 
 ## Noted VMware UPI Installation Issues
 
-* The RHCOS OVA has `ddb.virtualHWVersion = "6"`. This will cause issues in later versions of VMware.
-* Installation documents call for the `Latency Sensitivity` parameter to be set to `High` on each VM. This second order effect of this setting is that CPU/Memory allocation must be reserved up front, potentially limiting deployment options on smaller clusters.
+* The RHCOS OVA has `ddb.virtualHWVersion = "6"`. This will cause issues in later versions of VMware. The installation playbooks set this value to 14.
+* Installation documents call for the `Latency Sensitivity` parameter to be set to `High` on each VM. The second order effect of this setting is that CPU/Memory allocation must be reserved up front, potentially limiting deployment options on smaller clusters.
 
 # Installing
 
-Read through the [Installing on vSphere](https://access.redhat.com/documentation/en-us/openshift_container_platform/4.1/html-single/installing/index#installing-on-vsphere) installation documentation before proceeding.
+Please read through the [Installing on vSphere](https://access.redhat.com/documentation/en-us/openshift_container_platform/4.1/html-single/installing/index#installing-on-vsphere) installation documentation before proceeding.
 
 ## Clone this Repository
 
@@ -76,11 +76,11 @@ The following global variables will need to be modified (the default values are 
 |dhcp\_server\_subnet|IP Subnet used to configure dhcpd.conf|
 |load\_balancer\_ip|This IP address of your load balancer (the server that HAProxy will be installed on)|
 
-Under the `webserver` and `loadbalancer` group include the FQDN of each host. Also make sure you configure the `httpd_port` variable for the web server host. In this example, the web server that will serve up installation artifacts and load balancer (HAProxy) are the same host.
+Under the `webserver` and `loadbalancer` group include the FQDN of each host. Also make sure you configure the `httpd_port` variable for the web server host. In this example, the web server that will serve up installation artifacts and the load balancer (HAProxy) are the same host.
 
 For the individual node configuration, be sure to update the hosts in the `pg` hostgroup. Several parameters will need to be changed for _each_ host including `ip`, `memory`, `cores` and `cpu_reservation`. Match up your VMware environment with the inventory file.
 
-Since we set `Latency Sensitivity` to `High` on each virtual machine, memory and CPU resources are allocated up front. `cpu_reservation` can be calculated as follows:
+Since we set `Latency Sensitivity` to `High` on each virtual machine, memory and CPU resources need to be allocated up front. `cpu_reservation` can be calculated as follows:
 
 1. Find the CPU model (Xeon X5675) and determine GHz (3.06GHz)
 2. Find the number of cores assigned to VM (2)
@@ -112,7 +112,7 @@ ipa_password: "changeme"
 
 ## Download the OpenShift Installer
 
-The OpenShift Installer releases are stored [here](https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/). Find the installer, right click on the "Download Now" button and select copy link. Then pull the installer using curl (be sure to quote the URL) as shown (linux client used as example):
+The OpenShift Installer releases are stored [here](https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/). Find the installer, right click on the "Download Now" button and select copy link. Then pull the installer using curl as shown (Linux client used as example):
 
 ```console
 $ curl -o openshift-install-linux-4.1.4.tar.gz https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-install-linux-4.1.4.tar.gz
@@ -122,7 +122,7 @@ Extract the archive and continue.
 
 ## Creating Ignition Configs
 
-After you download the installer we need to create our ignition configs using the `openshift-install` command. Create a file called `install-config.yaml` similar to the one show below. This example shows 3 masters and 2 worker nodes.
+After you download the installer we need to create our ignition configs using the `openshift-install` command. Create a file called `install-config.yaml` similar to the one show below. This example shows 3 masters and 1 worker node (for actual deployments, 2 or more worker nodes should be used).
 
 ```yaml
 apiVersion: v1
@@ -165,7 +165,7 @@ $ ./openshift-installer create ignition-configs --dir=/home/chris/upi/vmware-upi
 
 ## Staging Content
 
-First we need to obtain the RHCOS OVA template. Place this in the same location referenced in the variable `ova\_path` in your inventory file (`/tmp` in this example).
+First we need to obtain the RHCOS OVA template. Place this in the same location referenced in the variable `ova_path` in your inventory file (`/tmp` in this example).
 
 ```console
 $ curl -o /tmp/rhcos-4.1.0-x86_64-vmware.ova https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.1/latest/rhcos-4.1.0-x86_64-vmware.ova
@@ -173,7 +173,7 @@ $ curl -o /tmp/rhcos-4.1.0-x86_64-vmware.ova https://mirror.openshift.com/pub/op
 
 This template will automatically get uploaded to VMware when the playbook runs.
 
-Next we need to stage the bootstrap scripts. Bootstrap content is injected into the OVA via base64 encoded vApp properties. Unfortunately the bootstrap ignition files is too large, so we will need to create a stub that pulls the primary ignition config from our webserver. To do this, create the `append-bootstrap.ign` config file in your staging directory (`/home/chris/upi/vmware-upi` in this example). Make sure `source` points to your web server.
+Next we need to stage the bootstrap scripts. Bootstrap content is injected into the OVA via base64 encoded vApp properties. Unfortunately the bootstrap ignition file is too large to fit in a vApp property, so we will need to create a stub that pulls the primary ignition config from our webserver. To do this, create the `append-bootstrap.ign` config file in your staging directory (`/home/chris/upi/vmware-upi` in this example). Make sure `source` points to your web server.
 
 ```json
 {
@@ -202,7 +202,7 @@ Once `append-bootstrap.ign` is created, we need to insert the base64 encoded val
 $ base64 -w0 /home/chris/upi/vmware-upi/append-bootstrap.ign
 ```
 
-Assign the output of that command to the variable `base64_bootstrap`. Repeat the process for `master.ign` and `worker.ign` with the output going into `base64_master` and `base64_worker` variables, respectively.
+Assign the output of that command to the variable `base64_bootstrap`. Repeat the process for `master.ign` and `worker.ign` with the output going into the `base64_master` and `base64_worker` variables, respectively.
 
 Lastly, copy `bootstrap.ign` to the document root of your web server (make sure the directory `/var/www/html` exists first).
 
@@ -236,13 +236,13 @@ The order of operations for the `provision.yml` playbook is as follows:
 	- Start master VMs and wait for SSH
 	- Start worker VMs and wait for SSH
 	
-Once the playbook completes (should several minutes) continue with the instructions.
+Once the playbook completes (should take several minutes) continue with the instructions.
 
 ### Skipping Portions of Automation
 
 If you already have your own DNS, DHCP or Load Balancer you can skip those portions of the automation by passing the appropriate `--skip-tags` argument to the `ansible-playbook` command.
 
-Each step of the automation is placed in its own role. Each is tagged ipa, dhcpd and haproxy. If you have your own DHCP configured, you can skip that portion as follows:
+Each step of the automation is placed in its own role. Each is tagged `ipa`, `dhcpd` and `haproxy`. If you have your own DHCP configured, you can skip that portion as follows:
 
 ```console
 $ ansible-playbook -e @base64.yml -i inventory.yml --ask-vault-pass --skip-tags dhcpd provision.yml
@@ -268,7 +268,11 @@ INFO Waiting up to 30m0s for bootstrapping to complete...
 INFO It is now safe to remove the bootstrap resources
 ```
 
-Once this openshift-install command completes successfully, login to the load balancer and comment out the references to the bootstrap server in `/etc/haproxy/haproxy.cfg`. There should be two references, one in the backend configuration `backend_22623` and one in the backend configuration `backend_6443`.
+Once this openshift-install command completes successfully, login to the load balancer and comment out the references to the bootstrap server in `/etc/haproxy/haproxy.cfg`. There should be two references, one in the backend configuration `backend_22623` and one in the backend configuration `backend_6443`. Once the bootstrap references are removed, restart the HAProxy service as follows:
+
+```console
+# systemctl restart haproxy.service
+```
 
 Lastly, refer to the VMware UPI documentation and complete [Logging into the cluster](https://access.redhat.com/documentation/en-us/openshift_container_platform/4.1/html-single/installing/index#cli-logging-in-kubeadmin_installing-vsphere) and all remaining steps.
 
