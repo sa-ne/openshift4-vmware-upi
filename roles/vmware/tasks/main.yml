@@ -22,6 +22,7 @@
     allow_duplicates: no
     disk_provisioning: thin
     name: "{{ ova_vm_name }}"
+    networks: "{u'VM Network':u'{{ vcenter_network }}'}"
     ova: "{{ ova_path }}"
     power_on: no
 
@@ -38,8 +39,10 @@
     guest_id: rhel7_64Guest
     hardware:
       memory_mb: "{{ hostvars[item].memory }}"
+      mem_reservation: "{{ hostvars[item].memory }}"
       num_cpus: "{{ hostvars[item].cores }}"
       num_cpu_cores_per_socket: "{{ hostvars[item].cores }}"
+      cpu_reservation: "{{ hostvars[item].cpu_reservation }}"
       version: 14
     name: "{{ item }}.{{ base_domain }}"
     state: present

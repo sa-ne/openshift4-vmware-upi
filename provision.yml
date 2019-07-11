@@ -26,11 +26,11 @@
       tags:
         - httpd
 
-#- name: Boot CoreOS Nodes
-#  hosts: localhost
-#  vars_files:
-#    - vault.yml
-#  roles:
-#   - role: boot-instances
-#     tags:
-#        - boot-instances 
+- name: Boot Red Hat CoreOS Nodes
+  hosts: localhost
+  vars_files:
+    - vault.yml
+  roles:
+   - role: boot-instances
+     tags:
+        - boot-instances 

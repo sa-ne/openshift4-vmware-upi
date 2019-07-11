@@ -1,0 +1,65 @@
+- name: Startup (install) Bootstrap Node
+  vmware_guest:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: no
+    cluster: "{{ vcenter_cluster }}"
+    datacenter: "{{ vcenter_datacenter }}"
+    name: "bootstrap.{{ base_domain }}"
+    state: poweredon
+
+- name: Wait 30 Minutes for SSH on Bootstrap Node
+  wait_for:
+    host: "{{ hostvars['bootstrap'].ip }}"
+    port: 22
+    sleep: 10
+    timeout: 1800
+
+- name: Startup (install) Master Nodes
+  vmware_guest:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: no
+    cluster: "{{ vcenter_cluster }}"
+    datacenter: "{{ vcenter_datacenter }}"
+    name: "{{ item }}.{{ base_domain }}"
+    state: poweredon
+  with_items:
+    - "{{ groups[provision_group] }}"
+  when: item is search("master")
+
+- name: Wait 30 Minutes for SSH on Master Nodes
+  wait_for:
+    host: "{{ hostvars[item].ip }}"
+    port: 22
+    sleep: 10
+    timeout: 1800
+  with_items:
+    - "{{ groups[provision_group] }}"
+  when: item is search("master")
+
+- name: Startup (install) Worker Nodes
+  vmware_guest:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: no
+    cluster: "{{ vcenter_cluster }}"
+    datacenter: "{{ vcenter_datacenter }}"
+    name: "{{ item }}.{{ base_domain }}"
+    state: poweredon
+  with_items:
+    - "{{ groups[provision_group] }}"
+  when: item is search("worker")
+
+- name: Wait 30 Minutes for SSH on Worker Nodes
+  wait_for:
+    host: "{{ hostvars[item].ip }}"
+    port: 22
+    sleep: 10
+    timeout: 1800
+  with_items:
+    - "{{ groups[provision_group] }}"
+  when: item is search("worker")
