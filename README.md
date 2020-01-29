@@ -1,10 +1,10 @@
-# Automated Provisioning of OpenShift 4.1 on VMware
+# Automated Provisioning of OpenShift 4.3 on VMware
 
-This repository contains a set of playbooks to help facilitate the deployment of OpenShift 4.1 on VMware.
+This repository contains a set of playbooks to help facilitate the deployment of OpenShift 4.3 on VMware.
 
 ## Background
 
-This is a continuation of the [work](https://github.com/sa-ne/openshift4-rhv-upi) done for automating the deployment of OpenShift 4.1 on RHV. The goal is to automate the configuration of a helper node/load balancer and automatically deploy Red Hat CoreOS (RHCOS) nodes on VMware. Upon completion your cluster should be at the _bootstrap complete_ phase.
+This is a continuation of the [work](https://github.com/sa-ne/openshift4-rhv-upi) done for automating the deployment of OpenShift 4.3 on RHV. The goal is to automate the configuration of a helper node/load balancer and automatically deploy Red Hat CoreOS (RHCOS) nodes on VMware. Upon completion your cluster should be at the _bootstrap complete_ phase.
 
 ## Specific Automations
 
@@ -40,12 +40,14 @@ All hostnames must use the following format:
 
 ## Noted VMware UPI Installation Issues
 
-* The RHCOS OVA has `ddb.virtualHWVersion = "6"`. This will cause issues in later versions of VMware. The installation playbooks set this value to 14.
-* Installation documents call for the `Latency Sensitivity` parameter to be set to `High` on each VM. The second order effect of this setting is that CPU/Memory allocation must be reserved up front, potentially limiting deployment options on smaller clusters.
+These issues are how deprecated for OCP 4.3. Latency Sensitivity is now optional and not set during installation.
+
+* ~~The RHCOS OVA has `ddb.virtualHWVersion = "6"`. This will cause issues in later versions of VMware. The installation playbooks set this value to 14.~~
+* ~~Installation documents call for the `Latency Sensitivity` parameter to be set to `High` on each VM. The second order effect of this setting is that CPU/Memory allocation must be reserved up front, potentially limiting deployment options on smaller clusters.~~
 
 # Installing
 
-Please read through the [Installing on vSphere](https://access.redhat.com/documentation/en-us/openshift_container_platform/4.1/html-single/installing/index#installing-on-vsphere) installation documentation before proceeding.
+Please read through the [Installing on vSphere](https://access.redhat.com/documentation/en-us/openshift_container_platform/4.3/html-single/installing_on_vsphere/index) installation documentation before proceeding.
 
 ## Clone this Repository
 
@@ -115,7 +117,7 @@ ipa_password: "changeme"
 The OpenShift Installer releases are stored [here](https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/). Find the installer, right click on the "Download Now" button and select copy link. Then pull the installer using curl as shown (Linux client used as example):
 
 ```console
-$ curl -o openshift-install-linux-4.1.4.tar.gz https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-install-linux-4.1.4.tar.gz
+$ curl -o openshift-client-linux-4.3.0.tar.gz https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/openshift-client-linux-4.3.0.tar.gz
 ```
 
 Extract the archive and continue.
@@ -130,7 +132,7 @@ baseDomain: ocp.pwc.umbrella.local
 compute:
 - hyperthreading: Enabled
   name: worker
-  replicas: 1
+  replicas: 3
 controlPlane:
   hyperthreading: Enabled
   name: master
@@ -157,7 +159,7 @@ sshKey: 'ssh-rsa ... user@host'
 
 You will need to modify vsphere, baseDomain, pullSecret and sshKey (be sure to use your _public_ key) with the appropriate values. Next, copy `install-config.yaml` into your working directory (`/home/chris/upi/vmware-upi` in this example) and run the OpenShift installer as follows to generate your Ignition configs.
 
-Your pull secret can be obtained from the [OpenShift start page](https://cloud.redhat.com/openshift/install/metal/user-provisioned).
+Your pull secret can be obtained from the [OpenShift start page](https://cloud.redhat.com/openshift/install/vsphere/user-provisioned).
 
 ```console
 $ ./openshift-installer create ignition-configs --dir=/home/chris/upi/vmware-upi
@@ -168,7 +170,7 @@ $ ./openshift-installer create ignition-configs --dir=/home/chris/upi/vmware-upi
 First we need to obtain the RHCOS OVA template. Place this in the same location referenced in the variable `ova_path` in your inventory file (`/tmp` in this example).
 
 ```console
-$ curl -o /tmp/rhcos-4.1.0-x86_64-vmware.ova https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.1/latest/rhcos-4.1.0-x86_64-vmware.ova
+$ curl -o /tmp/rhcos-4.3.0-x86_64-vmware.ova https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/latest/latest/rhcos-4.3.0-x86_64-vmware.ova
 ```
 
 This template will automatically get uploaded to VMware when the playbook runs.
@@ -212,7 +214,7 @@ _NOTE: You may be wondering about SELinux contexts since httpd is not installed.
 $ scp /home/chris/upi/vmware-upi/bootstrap.ign root@lb.vmware-upi.ocp.pwc.umbrella.local:/var/www/html/
 ```
 
-## Deploying OpenShift 4.1 on VMware with Ansible
+## Deploying OpenShift 4.3 on VMware with Ansible
 
 To kick off the installation, simply run the provision.yml playbook as follows:
 
@@ -256,7 +258,7 @@ $ ansible-playbook -e @base64.yml -i inventory.yml --ask-vault-pass --skip-tags 
 
 ## Finishing the Deployment
 
-Once the VMs boot RHCOS will be installed and nodes will automatically start configuring themselves. From this point we are essentially following the rest of the VMware UPI instructions starting with [Creating the Cluster](https://access.redhat.com/documentation/en-us/openshift_container_platform/4.1/html-single/installing/index#installation-installing-bare-metal_installing-vsphere).
+Once the VMs boot RHCOS will be installed and nodes will automatically start configuring themselves. From this point we are essentially following the rest of the VMware UPI instructions starting with [Creating the Cluster](https://access.redhat.com/documentation/en-us/openshift_container_platform/4.3/html-single/installing_on_vsphere/index#installation-installing-bare-metal_installing-vsphere).
 
 Run the following command to ensure the bootstrap process completes (be sure to adjust the `--dir` flag with your working directory):
 
@@ -274,7 +276,240 @@ Once this openshift-install command completes successfully, login to the load ba
 # systemctl restart haproxy.service
 ```
 
-Lastly, refer to the VMware UPI documentation and complete [Logging into the cluster](https://access.redhat.com/documentation/en-us/openshift_container_platform/4.1/html-single/installing/index#cli-logging-in-kubeadmin_installing-vsphere) and all remaining steps.
+Lastly, refer to the VMware UPI documentation and complete [Logging into the cluster](https://access.redhat.com/documentation/en-us/openshift_container_platform/4.3/html-single/installing_on_vsphere/index#cli-logging-in-kubeadmin_installing-vsphere) and all remaining steps.
+
+# Installing vSphere CSI Drivers
+
+By default, OpenShift will create a storage class that leverages the in-tree vSphere volume plugin to handle dynamic volume provisioning. The CSI drivers promise a deeper integration with vSphere to handle dynamic volume provisioning.
+
+The source for the driver can be found [here](https://github.com/kubernetes-sigs/vsphere-csi-driver) along with [specific installation instructions](https://cloud-provider-vsphere.sigs.k8s.io/tutorials/kubernetes-on-vsphere-with-kubeadm.html). The documentation references an installation against a very basic Kubernetes cluster so extensive modification is required to make this work with OpenShift.
+
+## Background/Requirements
+
+* According to the documentation, the out of tree CPI needs to be installed.
+* vSphere 6.7U3 is also required.
+* CPI and CSI components will be installed in the `vsphere` namespace for this example (upstream documentation deploys to `kube-system` namespace).
+
+## Install vSphere Cloud Provider Interface
+
+### Create Namespace for vSphere CPI and CSI
+
+```
+$ oc new-project vsphere
+```
+
+### Taint Worker Nodes
+
+All worker nodes are required to have the `node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule` taint. This will be removed automatically once the vSphere CPI is installed.
+
+```
+$ oc adm taint node workerX.vmware-upi.ocp.pwc.umbrella.local node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule
+```
+
+### Create a CPI ConfigMap
+
+This config file (see csi/cpi/vsphere.conf) contains details about our vSphere environment. Modify accordingly and create the ConfigMap resource as follows:
+
+```
+$ oc create configmap cloud-config --from-file=csi/cpi/vsphere.conf --namespace=vsphere
+```
+
+### Create CPI vSphere Secret
+
+Create a secret (see csi/cpi/cpi-global-secret.yaml) that contains the appropriate login information for our vSphere endpoint. Modify accordingly and create the Secret resource as follows:
+
+```
+$ oc create -f csi/cpi/cpi-global-secret.yaml
+```
+
+### Create Roles/RoleBindings for vSphere CPI
+
+Next we will create the appropriate RBAC controls for the CPI. These files were modified to place the resources in the `vsphere` namespace.
+
+```
+$ oc create -f csi/cpi/0-cloud-controller-manager-roles.yaml
+```
+
+```
+$ oc create -f csi/cpi/1-cloud-controller-manager-role-bindings.yaml
+```
+
+Since we are not deploying to the `kube-system` namespace, an additional RoleBinding is needed for the `cloud-controller-manager` service account.
+
+```
+$ oc create rolebinding -n kube-system vsphere-cpi-kubesystem --role=extension-apiserver-authentication-reader --serviceaccount=vsphere:cloud-controller-manager
+```
+
+We also need to add the `privileged` SCC to the service account as these pods will require privileged access to the RHCOS container host.
+
+```
+$ oc adm policy add-scc-to-user privileged -z cloud-controller-manager
+```
+
+### Create CPI DaemonSet
+
+Lastly, we need to create the CPI DaemonSet. This file was modified to place the resources in the `vsphere` namespace.
+
+```
+$ oc create -f csi/cpi/2-vsphere-cloud-controller-manager-ds.yaml
+```
+
+### Verify CPI Deployment
+
+Verify the appropriate pods are deployed using the following command:
+
+```
+$ oc get pods -n vsphere --selector='k8s-app=vsphere-cloud-controller-manager'
+NAME                                     READY   STATUS    RESTARTS   AGE
+vsphere-cloud-controller-manager-drvss   1/1     Running   0          161m
+vsphere-cloud-controller-manager-hjjkl   1/1     Running   0          161m
+vsphere-cloud-controller-manager-nj2t6   1/1     Running   0          161m
+```
+
+## Install vSphere CSI Drivers
+
+Now that the CPI is installed, we can install the vSphere CSI drivers.
+
+### Create CSI vSphere Secret
+
+Create a secret (see csi/csi/csi-vsphere.conf) that contains the appropriate login information for our vSphere endpoint. Modify accordingly and create the Secret resource as follows:
+
+```
+$ oc create secret generic vsphere-config-secret --from-file=csi/csi/csi-vsphere.conf --namespace=vsphere
+```
+
+### Create Roles/RoleBindings for vSphere CSI Driver
+
+Next we will create the appropriate RBAC controls for the CSI drivers. These files were modified to place the resources in the `vsphere` namespace.
+
+```
+$ oc create -f csi/csi/0-vsphere-csi-controller-rbac.yaml
+```
+
+Since we are not deploying to the `kube-system` namespace, an additional RoleBinding is needed for the `vsphere-csi-controller` service account.
+
+```
+$ oc create rolebinding -n kube-system vsphere-csi-kubesystem --role=extension-apiserver-authentication-reader --serviceaccount=vsphere:vsphere-csi-controller
+```
+
+We also need to add the `privileged` SCC to the service account as these pods will require privileged access to the RHCOS container host.
+
+```
+$ oc adm policy add-scc-to-user privileged -z vsphere-csi-controller
+```
+
+### Creating the CSI Controller StatefulSet
+
+Extensive modification was done to the StatefulSet set. The referenced kubelet path is different in OCP, so the following regex was run to adjust the appropriate paths:
+
+```
+%s/\/var\/lib\/csi\/sockets\/pluginproxy/\/var\/lib\/kubelet\/plugins_registry/g
+```
+
+The namespace was also changed to `vsphere`.
+
+Create the CSI Controller StatefulSet as follows:
+
+```
+$ oc create -f csi/csi/1-vsphere-csi-controller-ss.yaml
+```
+
+### Creating the CSI Driver DaemonSet
+
+By default no service account is associated with the DaemonSet, so the `vsphere-csi-controller` was added to the template spec. The namespace was also updated to `vsphere`.
+
+Create the CSI Driver DaemonSet as follows:
+
+```
+$ oc create -f csi/csi/2-vsphere-csi-node-ds.yaml
+```
+
+### Verify CSI Driver Deployment
+
+Make sure the the CSI Driver controller is running as follows:
+
+```
+$ oc get pods -n vsphere --selector='app=vsphere-csi-controller'
+NAME                       READY   STATUS    RESTARTS   AGE
+vsphere-csi-controller-0   5/5     Running   0          147m
+```
+
+Also make sure the appropriate node pods are running as follows:
+
+```
+$ oc get pods --selector='app=vsphere-csi-node'
+NAME                     READY   STATUS    RESTARTS   AGE
+vsphere-csi-node-6cfsj   3/3     Running   0          130m
+vsphere-csi-node-nsdsj   3/3     Running   0          130m
+```
+
+We can also validate the appropriate CRDs by running:
+
+```
+$ oc get csinode
+NAME                                        CREATED AT
+worker0.vmware-upi.ocp.pwc.umbrella.local   2020-01-29T16:18:02Z
+worker1.vmware-upi.ocp.pwc.umbrella.local   2020-01-29T16:18:03Z
+```
+
+Also verify the driver has been properly assigned on each CSINode:
+
+```
+$ oc get csinode -ojson | jq '.items[].spec.drivers[] | .name, .nodeID'
+"csi.vsphere.vmware.com"
+"worker0.vmware-upi.ocp.pwc.umbrella.local"
+"csi.vsphere.vmware.com"
+"worker1.vmware-upi.ocp.pwc.umbrella.local"
+```
+
+## Creating a Storage Class
+
+A very simple storage class is referenced in csi/csi/storageclass.yaml. Adjust the datastore URI accordingly and run:
+
+```
+$ oc create -f csi/csi/storageclass.yaml
+```
+
+You should see the storage class defined in the following:
+
+```
+$ oc get sc
+NAME                                 PROVISIONER                    AGE
+example-vanilla-block-sc (default)   csi.vsphere.vmware.com         72m
+thin                                 kubernetes.io/vsphere-volume   19h
+```
+
+
+### Testing a PVC/POD
+
+To create a simple PVC request, run the following:
+
+```
+$ oc create -n vsphere -f csi/csi/example-pvc.yaml
+```
+
+Validate the PVC was created:
+
+```
+$ oc get pvc -n vsphere example-vanilla-block-pvc
+NAME                        STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS               AGE
+example-vanilla-block-pvc   Bound    pvc-f8e1db9b-4aea-4eb3-b8c0-8cf7a6ec7d7f   5Gi        RWO            example-vanilla-block-sc   73m
+```
+
+Next create a pod to bind to the new PVC:
+
+```
+$ oc create -n vsphere -f csi/csi/example-pod.yaml
+```
+
+
+Validate the pod was successfully created:
+
+```
+$ oc get pod -n vsphere example-vanilla-block-pod
+NAME                        READY   STATUS    RESTARTS   AGE
+example-vanilla-block-pod   1/1     Running   0          73m
+```
 
 # Retiring
 
@@ -283,3 +518,4 @@ Playbooks are also provided to remove VMs from VMware and DNS entries from IdM. 
 ```console
 $ ansible-playbook -i inventory.yml --ask-vault-pass retire.yml
 ```
+

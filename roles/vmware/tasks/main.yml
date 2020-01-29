@@ -39,11 +39,8 @@
     guest_id: rhel7_64Guest
     hardware:
       memory_mb: "{{ hostvars[item].memory }}"
-      mem_reservation: "{{ hostvars[item].memory }}"
       num_cpus: "{{ hostvars[item].cores }}"
       num_cpu_cores_per_socket: "{{ hostvars[item].cores }}"
-      cpu_reservation: "{{ hostvars[item].cpu_reservation }}"
-      version: 14
     name: "{{ item }}.{{ base_domain }}"
     state: present
     template: "{{ ova_vm_name }}"
@@ -54,8 +51,6 @@
         value: base64
       - key: "disk.EnableUUID"
         value: "TRUE"
-      - key: "sched.cpu.latencySensitivity"
-        value: "High"
   register: vmware_guest_results
   with_items:
     - "{{ groups[provision_group] }}"
