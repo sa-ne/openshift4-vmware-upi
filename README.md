@@ -561,7 +561,7 @@ You should see phase `Succeeded` for all operators.
 
 ## Provisioning OCS Cluster
 
-Modify the file `ocs/storagecluster.yaml` and adjust the storage requests accordingly. These requests must match the underlying PV sizes in the corresponding storage class.
+Modify the file `ocs/storagecluster.yaml` and adjust the storage requests accordingly.
 
 To create the cluster, run the following command:
 
