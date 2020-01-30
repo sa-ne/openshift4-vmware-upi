@@ -1,0 +1,30 @@
+apiVersion: ocs.openshift.io/v1
+kind: StorageCluster
+metadata:
+  namespace: openshift-storage
+  name: storagecluster
+spec:
+  manageNodes: false
+  monPVCTemplate:
+    spec:
+      storageClassName: vsphere-csi
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 10Gi
+  storageDeviceSets:
+  - name: deviceset
+    count: 3
+    resources: {}
+    placement: {}
+    dataPVCTemplate:
+      spec:
+        storageClassName: vsphere-csi
+        accessModes:
+        - ReadWriteOnce
+        volumeMode: Block
+        resources:
+          requests:
+            storage: 300Gi
+    portable: true

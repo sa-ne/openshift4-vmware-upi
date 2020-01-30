@@ -502,13 +502,104 @@ Next create a pod to bind to the new PVC:
 $ oc create -n vsphere -f csi/csi/example-pod.yaml
 ```
 
-
 Validate the pod was successfully created:
 
 ```
 $ oc get pod -n vsphere example-vanilla-block-pod
 NAME                        READY   STATUS    RESTARTS   AGE
 example-vanilla-block-pod   1/1     Running   0          73m
+```
+
+# Install OpenShift Container Storage using vSphere CSI Drivers
+
+The installation process for OCS is relatively straightforward. We will just substitute the default `thin` storage class that leverages the in-tree vSphere volume plugin with a new storage class (named `vsphere-csi` in this example) that is backed by the vSphere CSI drivers.
+
+## Create vSphere CSI Storage Class
+
+Run the following command to create the `vsphere-csi` storage class. Be sure to modify the URI in `datastoreurl` to match your environment.
+
+```
+$ oc create -f ocs/vsphere-csi-storageclass.yaml
+```
+
+Verify the storage class was created as follows:
+
+```
+$ oc get storageclass vsphere-csi
+NAME          PROVISIONER              AGE
+vsphere-csi   csi.vsphere.vmware.com   40m
+```
+
+## Label Nodes for OpenShift Container Storage
+
+Before we begin an installation, we need to label our OCS nodes with the label `cluster.ocs.openshift.io/openshift-storage`. Label each node with the following command:
+
+```console
+$ oc label node workerX.vmware-upi.ocp.pwc.umbrella.local cluster.ocs.openshift.io/openshift-storage=''
+```
+
+## Deploying the OCS Operator
+
+To deploy the OCS operator, run the following command:
+
+```console
+$ oc create -f ocs/ocs-operator.yaml
+```
+
+### Verifying Operator Deployment
+
+To verify the operators were successfully installed, run the following:
+
+```console
+$ oc get csv -n openshift-storage
+NAME                  DISPLAY                       VERSION   REPLACES              PHASE
+awss3operator.1.0.1   AWS S3 Operator               1.0.1     awss3operator.1.0.0   Succeeded
+ocs-operator.v4.2.1   OpenShift Container Storage   4.2.1                           Succeeded
+```
+
+You should see phase `Succeeded` for all operators.
+
+## Provisioning OCS Cluster
+
+Modify the file `ocs/storagecluster.yaml` and adjust the storage requests accordingly. These requests must match the underlying PV sizes in the corresponding storage class.
+
+To create the cluster, run the following command:
+
+```console
+$ oc create -f ocs/storagecluster.yaml
+```
+
+The installation process should take approximately 5 minutes. Run `oc get pods -n openshift-storage -w` to observe the process.
+
+To verify the installation is complete, run the following:
+
+```console
+$ oc get storagecluster storagecluster -ojson -n openshift-storage | jq .status
+{
+  "cephBlockPoolsCreated": true,
+  "cephFilesystemsCreated": true,
+  "cephObjectStoreUsersCreated": true,
+  "cephObjectStoresCreated": true,
+  ...
+}
+```
+
+All fields should be marked true.
+
+## Adding Storage for OpenShift Registry
+
+OCS provides RBD and CephFS backed storage classes for use within the cluster. We can leverage the CephFS storage class to create a PVC for the OpenShift registry.
+
+Modify the file `ocs/registry-cephfs-pvc.yaml` file and adjust the size of the claim. Then run the following to create the PVC:
+
+```console
+$ oc create -f ocs/registry-cephfs-pvc.yaml
+```
+
+To reconfigure the registry to use our new PVC, run the following:
+
+```console
+$ oc patch configs.imageregistry.operator.openshift.io/cluster --type merge -p '{"spec":{"managementState":"Managed","storage":{"pvc":{"claim":"registry"}}}}'
 ```
 
 # Retiring
