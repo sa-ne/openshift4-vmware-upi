@@ -1,5 +1,0 @@
----
-# Base64 encoded ignition configs go here
-base64_bootstrap: ""
-base64_master: ""
-base64_worker: ""

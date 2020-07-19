@@ -13,8 +13,20 @@
     mode: 0644
     setype: dhcp_etc_t
 
+- name: Empty Leases File
+  copy:
+    content: ""
+    dest: /var/lib/dhcpd/dhcpd.leases
+    force: yes
+    group: dhcpd
+    mode: 0644
+    owner: dhcpd
+    serole: object_r
+    setype: dhcpd_state_t
+    seuser: system_u
+
 - name: Enable/Start dhcpd Service
   systemd:
     name: dhcpd
-    state: started
+    state: restarted
     enabled: yes

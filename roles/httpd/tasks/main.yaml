@@ -5,8 +5,10 @@
       - php
       - policycoreutils-python
     state: latest
+  tags:
+    - install-packages
 
-- name: Allow httpd to listen on TCP port 8888
+- name: Allow httpd to listen on TCP port {{ httpd_port }}
   seport:
     ports: "{{ httpd_port }}"
     proto: tcp
@@ -31,8 +33,30 @@
     mode: 0644
     setype: httpd_sys_content_t
 
+- name: Copy ignition files
+  copy:
+    src: "{{ installation_directory }}/{{ item }}"
+    dest: /var/www/html/
+    owner: root
+    group: root
+    mode: 0644
+    setype: httpd_sys_content_t
+  loop:
+    - bootstrap.ign
+    - master.ign
+    - worker.ign
+
 - name: Restore SELinux Contexts in Document Root
   shell: restorecon -R /var/www/html
+
+- name: Enable httpd port in firewall
+  firewalld:
+    port: "{{ httpd_port }}/tcp"
+    state: enabled
+    permanent: yes
+    immediate: yes
+  tags:
+    - firewalld
 
 - name: Enable/Start httpd Service
   systemd:

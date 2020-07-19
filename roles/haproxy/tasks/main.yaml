@@ -2,7 +2,11 @@
   yum:
     name:
       - haproxy
+      - libselinux-python
+      - libsemanage-python
     state: latest
+  tags:
+    - install-packages
 
 - name: Copy haproxy.cfg Template
   template:
@@ -19,8 +23,22 @@
     state: yes
     persistent: yes
 
-- name: Enable/Start httpd Service
+- name: Enable proxied ports in firewall
+  firewalld:
+    port: "{{ item }}/tcp"
+    state: enabled
+    permanent: yes
+    immediate: yes
+  loop:
+    - 80
+    - 443
+    - 6443
+    - 22623
+  tags:
+    - firewalld
+
+- name: Enable/Start haproxy Service
   systemd:
     name: haproxy
-    state: started
+    state: restarted
     enabled: yes

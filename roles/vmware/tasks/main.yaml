@@ -26,6 +26,10 @@
     ova: "{{ ova_path }}"
     power_on: no
 
+- name: Debug Append Bootstrap Ignition File
+  debug:
+    msg: "{{ lookup('template', 'templates/append-bootstrap.j2') | to_json | b64encode }}"
+
 - name: Create VMs
   vmware_guest:
     hostname: "{{ vcenter_hostname }}"
@@ -34,9 +38,10 @@
     validate_certs: no
     cluster: "{{ vcenter_cluster }}"
     datacenter: "{{ vcenter_datacenter }}"
-    datastore: "{{ vcenter_datastore }}"
+    datastore: "{{ hostvars[item].datastore }}"
+    disk: "{{ hostvars[item].disk | default([]) | list }}"
     folder: "/{{ vcenter_datacenter }}/vm/{{ cluster_name }}"
-    guest_id: rhel7_64Guest
+    guest_id: rhel8_64Guest
     hardware:
       memory_mb: "{{ hostvars[item].memory }}"
       num_cpus: "{{ hostvars[item].cores }}"
@@ -46,7 +51,7 @@
     template: "{{ ova_vm_name }}"
     customvalues:
       - key: "guestinfo.ignition.config.data"
-        value: "{{ hostvars[item].base64_config_data }}"
+        value: "{{ lookup('template', 'templates/append-bootstrap.j2') | to_json | b64encode }}"
       - key: "guestinfo.ignition.config.data.encoding"
         value: base64
       - key: "disk.EnableUUID"
@@ -66,6 +71,44 @@
   register: vmware_guest_facts_results
   with_items:
     - "{{ groups[provision_group] }}"
+
+- name: Combine Applicable Disks & Hostnames into Dictionary for Easy Lookup
+  set_fact:
+    disk_name_dict: >-
+      {{
+        disk_name_dict | default([]) +
+        [
+          {
+            'name': item,
+            'disks': hostvars[item].disks | default([])
+          }
+        ]
+      }}
+  tags:
+    - disks
+  with_items:
+    - "{{ groups[provision_group] }}"
+
+- name: Add Disks to VMs
+  vmware_guest_disk:
+    datacenter: "{{ vcenter_datacenter }}"
+    disk:
+      - size_gb: "{{ item.1.size_gb }}"
+        type: thin
+        datastore: "{{ item.1.datastore }}"
+        scsi_controller: "{{ item.1.scsi_controller }}"
+        state: present
+        unit_number: "{{ item.1.unit_number }}"
+    folder: "/{{ vcenter_datacenter }}/vm/{{ cluster_name }}"
+    hostname: "{{ vcenter_hostname }}"
+    name: "{{ item.0.name }}.{{ base_domain }}"
+    password: "{{ vcenter_password }}"
+    username: "{{ vcenter_username }}"
+    validate_certs: no
+  with_subelements:
+    - "{{ disk_name_dict }}"
+    - disks
+    - skip_missing: False
 
 - name: Combine Hostname/IP/MAC into Dictionary for Easy Lookup
   set_fact:

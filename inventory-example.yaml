@@ -1,0 +1,125 @@
+---
+all:
+  vars:
+    provision_group: pg
+    ova_path: /tmp/rhcos-4.5.2-x86_64-vmware.x86_64.ova
+    ova_vm_name: rhcos-4.5.2-x86_64-vmware.x86_64
+    cluster_name: vmware-upi
+    base_domain: vmware-upi.ocp.pwc.umbrella.local
+    dhcp_server_dns_servers: 172.16.10.11
+    dhcp_server_gateway: 172.16.10.254
+    dhcp_server_subnet_mask: 255.255.255.0
+    dhcp_server_subnet: 172.16.10.0
+    load_balancer_ip: 172.16.10.171
+    installation_directory: ~/upi/vmware-upi
+  children:
+    webserver:
+      hosts:
+        lb.vmware-upi.ocp.pwc.umbrella.local:
+          httpd_port: 8080
+    loadbalancer:
+      hosts:
+        lb.vmware-upi.ocp.pwc.umbrella.local:
+    pg:
+      hosts:
+        bootstrap:
+          ip: 172.16.10.131
+          memory: 24576
+          cores: 2
+          datastore: pool-nvme-vms
+        master0:
+          etcd_name: etcd-0
+          ip: 172.16.10.132
+          memory: 24576
+          cores: 4
+          datastore: r420-esxi-1-nvme
+        master1:
+          etcd_name: etcd-1
+          ip: 172.16.10.133
+          memory: 24576
+          cores: 4
+          datastore: r420-esxi-2-nvme
+        master2:
+          etcd_name: etcd-2
+          ip: 172.16.10.134
+          memory: 24576
+          cores: 4
+          datastore: r710-esxi-1-nvme
+        worker0:
+          ip: 172.16.10.135
+          memory: 24576
+          cores: 4
+          datastore: pool-nvme-vms
+        worker1:
+          ip: 172.16.10.136
+          memory: 24576
+          cores: 4
+          datastore: pool-nvme-vms
+        worker2:
+          ip: 172.16.10.137
+          memory: 24576
+          cores: 4
+          datastore: pool-nvme-vms
+        ocs-node0:
+          ip: 172.16.10.138
+          memory: 49152
+          cores: 10
+          datastore: pool-nvme-vms
+          disks:
+          - size_gb: 800
+            type: thin
+            datastore: r420-esxi-1-nvme
+            scsi_controller: 0
+            unit_number: 1
+          - size_gb: 5
+            type: thin
+            datastore: r420-esxi-1-nvme
+            scsi_controller: 0
+            unit_number: 2
+        ocs-node1:
+          ip: 172.16.10.139
+          memory: 49152
+          cores: 10
+          datastore: pool-nvme-vms
+          disks:
+          - size_gb: 800
+            type: thin
+            datastore: r420-esxi-2-nvme
+            scsi_controller: 0
+            unit_number: 1
+          - size_gb: 5
+            type: thin
+            datastore: r420-esxi-2-nvme
+            scsi_controller: 0
+            unit_number: 2
+        ocs-node2:
+          ip: 172.16.10.140
+          memory: 49152
+          cores: 10
+          datastore: pool-nvme-vms
+          disks:
+          - size_gb: 800
+            type: thin
+            datastore: r710-esxi-1-nvme
+            scsi_controller: 0
+            unit_number: 1
+          - size_gb: 5
+            type: thin
+            datastore: r710-esxi-1-nvme
+            scsi_controller: 0
+            unit_number: 2
+        infra-node0:
+          ip: 172.16.10.141
+          memory: 49152
+          cores: 10
+          datastore: pool-nvme-vms
+        infra-node1:
+          ip: 172.16.10.142
+          memory: 49152
+          cores: 10
+          datastore: pool-nvme-vms
+        infra-node2:
+          ip: 172.16.10.143
+          memory: 49152
+          cores: 10
+          datastore: pool-nvme-vms

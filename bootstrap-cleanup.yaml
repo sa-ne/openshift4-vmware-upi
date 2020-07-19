@@ -1,0 +1,15 @@
+- name: Remove bootstrap entry from haproxy
+  hosts: loadbalancer
+  gather_facts: no
+  become: yes
+  tasks:
+    - name: Make sure bootstrap lines are commented out
+      replace:
+        path: /etc/haproxy/haproxy.cfg
+        regexp: '(server bootstrap .*)'
+        replace: '# \1'
+
+    - name: Reload haproxy service
+      service:
+        name: haproxy
+        state: reloaded

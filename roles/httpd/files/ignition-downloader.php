@@ -5,10 +5,8 @@
         $file = "bootstrap.ign";
     else if(stristr($dns, "master"))
         $file = "master.ign";
-    else if(stristr($dns, "worker"))
+	else
         $file = "worker.ign";
-    else
-        die("No ignition file found based on hostname.");
 
     if(file_exists("/var/www/html/$file"))
     {

@@ -2,8 +2,7 @@
 - name: Provision OpenShift 4 Environment
   hosts: localhost
   vars_files:
-    - vault.yml
-    - base64.yml
+    - vault.yaml
   roles:
     - role: ipa
       tags:
@@ -29,7 +28,7 @@
 - name: Boot Red Hat CoreOS Nodes
   hosts: localhost
   vars_files:
-    - vault.yml
+    - vault.yaml
   roles:
    - role: boot-instances
      tags:

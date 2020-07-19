@@ -29,7 +29,7 @@
 - name: Retire Integrated VMs in Bulk
   hosts: localhost
   vars_files:
-    - vault.yml
+    - vault.yaml
   roles:
     - role: vmware-retire
       tags:
