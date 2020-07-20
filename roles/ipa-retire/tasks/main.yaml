@@ -44,7 +44,7 @@
     name: "{{ item }}"
     zone_name: "{{ base_domain }}"
     record_type: A
-    record_value: "{{ load_balancer_ip }}"
+    record_value: "{{ hostvars[groups['helper'][0]].ip }}"
     ipa_host: "{{ ipa_hostname }}"
     ipa_user: "{{ ipa_username }}"
     ipa_pass: "{{ ipa_password }}"
@@ -58,7 +58,7 @@
     name: "*.apps"
     zone_name: "{{ base_domain }}"
     record_type: A
-    record_value: "{{ load_balancer_ip }}"
+    record_value: "{{ hostvars[groups['helper'][0]].ip }}"
     ipa_host: "{{ ipa_hostname }}"
     ipa_user: "{{ ipa_username }}"
     ipa_pass: "{{ ipa_password }}"

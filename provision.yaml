@@ -1,5 +1,5 @@
 ---
-- name: Provision OpenShift 4 Environment
+- name: Setup DNS and Create RHCOS VMs on VMware
   hosts: localhost
   vars_files:
     - vault.yaml
@@ -11,13 +11,16 @@
       tags:
         - vmware
 
-- name: Setup Loadbalancer Host
-  hosts: loadbalancer
+- name: Setup Load Balancer Host
+  hosts: helper
   become: yes
   roles:
     - role: dhcpd
       tags:
         - dhcpd
+    - role: firewalld
+      tags:
+        - firewalld
     - role: haproxy
       tags:
         - haproxy

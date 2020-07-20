@@ -3,7 +3,7 @@
     "config": {
       "append": [
         {
-          "source": "http://{{ groups['webserver'][0] }}:8080/ignition-downloader.php",
+          "source": "http://{{ groups['helper'][0] }}:8080/ignition-downloader.php",
           "verification": {}
         }
       ]

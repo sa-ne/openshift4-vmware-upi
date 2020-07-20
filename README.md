@@ -75,7 +75,7 @@ The following global variables will need to be modified (the default values are 
 |load\_balancer\_ip|This IP address of your load balancer (the server that HAProxy will be installed on)|
 |installation\_directory|Director containing the ignition files for our cluster|
 
-Under the `webserver` and `loadbalancer` group include the FQDN of each host. Also make sure you configure the `httpd_port` variable for the web server host. In this example, the web server that will serve up installation artifacts and the load balancer (HAProxy) are the same host.
+Under the `helper` group include the FQDN for your helper node. Also make sure you configure the `httpd_port` variable and IP address.
 
 For the individual node configuration, be sure to update the hosts in the `pg` hostgroup. Several parameters will need to be changed for _each_ host including `ip`, `memory`, etc. Match up your VMware environment with the inventory file.
 

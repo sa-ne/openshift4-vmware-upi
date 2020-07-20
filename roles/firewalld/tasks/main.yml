@@ -1,0 +1,13 @@
+- name: Install firewalld Package
+  yum:
+    name:
+      - firewalld
+    state: latest
+  tags:
+    - install-packages
+
+- name: Enable/Start firewalld Service
+  systemd:
+    name: firewalld
+    state: started
+    enabled: yes

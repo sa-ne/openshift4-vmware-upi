@@ -10,16 +10,13 @@ all:
     dhcp_server_gateway: 172.16.10.254
     dhcp_server_subnet_mask: 255.255.255.0
     dhcp_server_subnet: 172.16.10.0
-    load_balancer_ip: 172.16.10.171
     installation_directory: ~/upi/vmware-upi
   children:
-    webserver:
+    helper:
       hosts:
         lb.vmware-upi.ocp.pwc.umbrella.local:
+          ansible_host: 172.16.10.171
           httpd_port: 8080
-    loadbalancer:
-      hosts:
-        lb.vmware-upi.ocp.pwc.umbrella.local:
     pg:
       hosts:
         bootstrap:
@@ -65,6 +62,7 @@ all:
           memory: 49152
           cores: 10
           datastore: pool-nvme-vms
+          hypervisor: r420-esxi-1.pwc.umbrella.local
           disks:
           - size_gb: 800
             type: thin
@@ -81,6 +79,7 @@ all:
           memory: 49152
           cores: 10
           datastore: pool-nvme-vms
+          hypervisor: r420-esxi-2.pwc.umbrella.local
           disks:
           - size_gb: 800
             type: thin
@@ -97,6 +96,7 @@ all:
           memory: 49152
           cores: 10
           datastore: pool-nvme-vms
+          hypervisor: r710-esxi-1.pwc.umbrella.local
           disks:
           - size_gb: 800
             type: thin

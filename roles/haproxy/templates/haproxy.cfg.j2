@@ -129,7 +129,7 @@ backend backend_443
     timeout connect 10s
     timeout server 1m
 {% for item in groups[provision_group] %}
-{% if 'worker' in item %}
+{% if 'master' not in item and 'bootstrap' not in item %}
     server {{ item }} {{ hostvars[item].ip }}:443 check
 {% endif %}
 {% endfor %}
@@ -144,7 +144,7 @@ backend backend_80
     timeout connect 10s
     timeout server 1m
 {% for item in groups[provision_group] %}
-{% if 'worker' in item %}
+{% if 'master' not in item and 'bootstrap' not in item %}
     server {{ item }} {{ hostvars[item].ip }}:80 check
 {% endif %}
 {% endfor %}

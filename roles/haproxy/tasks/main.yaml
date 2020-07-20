@@ -23,6 +23,12 @@
     state: yes
     persistent: yes
 
+- name: Enable/Start haproxy Service
+  systemd:
+    name: haproxy
+    state: restarted
+    enabled: yes
+
 - name: Enable proxied ports in firewall
   firewalld:
     port: "{{ item }}/tcp"
@@ -34,11 +40,6 @@
     - 443
     - 6443
     - 22623
+    - 9000
   tags:
     - firewalld
-
-- name: Enable/Start haproxy Service
-  systemd:
-    name: haproxy
-    state: restarted
-    enabled: yes
