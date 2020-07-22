@@ -166,7 +166,7 @@ $ curl -o /tmp/rhcos-4.5.2-x86_64-vmware.x86_64.ova https://mirror.openshift.com
 
 This template will automatically get uploaded to VMware when the playbook runs.
 
-## Deploying OpenShift 4.3 on VMware with Ansible
+## Deploying OpenShift 4.5 on VMware with Ansible
 
 To kick off the installation, simply run the provision.yaml playbook as follows:
 
@@ -257,8 +257,6 @@ version   4.5.2     True        False         13h     Cluster version is 4.5.2
 
 # Installing vSphere CSI Drivers
 
-Note: this has not been updated for OCP 4.5 or vSphere 7.
-
 By default, OpenShift will create a storage class that leverages the in-tree vSphere volume plugin to handle dynamic volume provisioning. The CSI drivers promise a deeper integration with vSphere to handle dynamic volume provisioning.
 
 The source for the driver can be found [here](https://github.com/kubernetes-sigs/vsphere-csi-driver) along with [specific installation instructions](https://cloud-provider-vsphere.sigs.k8s.io/tutorials/kubernetes-on-vsphere-with-kubeadm.html). The documentation references an installation against a very basic Kubernetes cluster so extensive modification is required to make this work with OpenShift.
@@ -266,7 +264,7 @@ The source for the driver can be found [here](https://github.com/kubernetes-sigs
 ## Background/Requirements
 
 * According to the documentation, the out of tree CPI needs to be installed.
-* vSphere 6.7U3 is also required.
+* vSphere 6.7U3+ is also required. Tested on vSphere 7.0.
 * CPI and CSI components will be installed in the `vsphere` namespace for this example (upstream documentation deploys to `kube-system` namespace).
 
 ## Install vSphere Cloud Provider Interface
@@ -377,7 +375,7 @@ We also need to add the `privileged` SCC to the service account as these pods wi
 $ oc adm policy add-scc-to-user privileged -z vsphere-csi-controller
 ```
 
-### Creating the CSI Controller StatefulSet
+### Creating the CSI Controller Deployment
 
 Extensive modification was done to the StatefulSet set. The referenced kubelet path is different in OCP, so the following regex was run to adjust the appropriate paths:
 
@@ -390,7 +388,7 @@ The namespace was also changed to `vsphere`.
 Create the CSI Controller StatefulSet as follows:
 
 ```
-$ oc create -f csi/csi/1-vsphere-csi-controller-ss.yaml
+$ oc create -f csi/csi/1-vsphere-csi-controller-deployment.yaml
 ```
 
 ### Creating the CSI Driver DaemonSet
