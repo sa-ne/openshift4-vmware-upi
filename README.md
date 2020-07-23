@@ -115,7 +115,8 @@ Extract the archive and continue.
 
 ## Creating Ignition Configs
 
-After you download the installer we need to create our ignition configs using the `openshift-install` command. Create a file called `install-config.yaml` similar to the one show below. This example shows 3 masters and 3 worker nodes. For UPI installations the worker node count is actually ignored. Technically it should be set to 0, but doing this would cause the master nodes to be marked schedulable, which would require a modification to the installation manifests. Setting the worker nodes to a value > 0 saves us from doing this step.
+After you download the installer we need to create our ignition configs using the `openshift-install` command. Create a file called `install-config.yaml` similar to the one show below. This example shows 3 masters and 0 worker nodes. Since this is a UPI installation, we will 'manually' add worker nodes to the cluster.
+
 
 ```yaml
 apiVersion: v1
@@ -123,7 +124,7 @@ baseDomain: ocp.pwc.umbrella.local
 compute:
 - hyperthreading: Enabled
   name: worker
-  replicas: 3
+  replicas: 0
 controlPlane:
   hyperthreading: Enabled
   name: master
@@ -148,9 +149,35 @@ pullSecret: '{ ... }'
 sshKey: 'ssh-rsa ... user@host'
 ```
 
-You will need to modify vsphere, name, baseDomain, pullSecret and sshKey (be sure to use your _public_ key) with the appropriate values. Next, copy `install-config.yaml` into your working directory (`~/upi/vmware-upi` in this example) and run the OpenShift installer as follows to generate your ignition configs.
+You will need to modify vsphere, name, baseDomain, pullSecret and sshKey (be sure to use your _public_ key) with the appropriate values. Next, copy `install-config.yaml` into your working directory (`~/upi/vmware-upi` in this example).
 
 Your pull secret can be obtained from the [OpenShift start page](https://cloud.redhat.com/openshift/install/vsphere/user-provisioned).
+
+Before we create the ignition configs we need to generate our manifests first.
+
+```console
+$ ./openshift-install create manifests --dir=~/upi/vmware-upi
+```
+
+Since we specified 0 worker nodes in the install-config.yaml file, the masters become schedulable. We want to prevent that, so run the following sed command to disable:
+
+```console
+$ sed -i 's/mastersSchedulable: true/mastersSchedulable: false/' ~/upi/vmware-upi/manifests/cluster-scheduler-02-config.yml
+```
+
+Next, we want to disable the manifests that define the control plane machines:
+
+```console
+$ rm -f ~/upi/vmware-upi/openshift/99_openshift-cluster-api_master-machines-*.yaml
+```
+
+Last we want to disable the manifests that define the worker nodes:
+
+```console
+$ rm -f ~/upi/vmware-upi/openshift/99_openshift-cluster-api_worker-machineset-*.yaml
+```
+
+With our manifests modified to support a UPI installation, run the OpenShift installer as follows to generate your ignition configs.
 
 ```console
 $ ./openshift-installer create ignition-configs --dir=~/upi/vmware-upi
