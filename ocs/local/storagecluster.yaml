@@ -7,16 +7,15 @@ spec:
   manageNodes: false
   monPVCTemplate:
     spec:
-      storageClassName: localstorage-ocs-mon-sc
+      storageClassName: thin
       accessModes:
       - ReadWriteOnce
       resources:
         requests:
           storage: 5Gi
   storageDeviceSets:
-  - name: deviceset
+  - name: ocs-deviceset
     count: 3
-    resources: {}
     placement: {}
     dataPVCTemplate:
       spec:
@@ -27,4 +26,4 @@ spec:
         resources:
           requests:
             storage: 800Gi
-    portable: true
+    portable: false

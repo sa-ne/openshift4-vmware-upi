@@ -145,11 +145,14 @@ platform:
     password: changeme
     datacenter: PWC
     defaultDatastore: pool-nvme-vms
+    folder: /PWC/vms/vmware-upi
 pullSecret: '{ ... }'
 sshKey: 'ssh-rsa ... user@host'
 ```
 
 You will need to modify vsphere, name, baseDomain, pullSecret and sshKey (be sure to use your _public_ key) with the appropriate values. Next, copy `install-config.yaml` into your working directory (`~/upi/vmware-upi` in this example).
+
+Also note starting with OpenShift 4.4, the `folder` variable is now required for UPI based installations. This is not explicitly stated in the OpenShift installation instructions and a documentation bug was filed to correct that.
 
 Your pull secret can be obtained from the [OpenShift start page](https://cloud.redhat.com/openshift/install/vsphere/user-provisioned).
 
@@ -180,7 +183,7 @@ $ rm -f ~/upi/vmware-upi/openshift/99_openshift-cluster-api_worker-machineset-*.
 With our manifests modified to support a UPI installation, run the OpenShift installer as follows to generate your ignition configs.
 
 ```console
-$ ./openshift-installer create ignition-configs --dir=~/upi/vmware-upi
+$ ./openshift-install create ignition-configs --dir=~/upi/vmware-upi
 ```
 
 ## Staging OVA File
