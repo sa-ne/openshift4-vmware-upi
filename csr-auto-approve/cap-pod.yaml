@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: csr-auto-approver
+  labels:
+    app: csr-auto-approver
+  namespace: csr-auto-approver
+spec:
+  serviceAccountName: cap-service-account
+  nodeSelector:
+    node-role.kubernetes.io/master: ""
+  tolerations:
+  - effect: NoSchedule
+    key: node-role.kubernetes.io/master
+    operator: Exists
+  containers:
+  - name: auto-approver
+    image: registry.redhat.io/openshift4/ose-cli
+    command:
+      - /data/approver.sh
+    volumeMounts:
+    - name: data
+      mountPath: /data/nodes
+      subPath: nodes
+    - name: data
+      mountPath: /data/approver.sh
+      subPath: approver.sh
+  volumes:
+    - name: data
+      configMap:
+        name: data
+        defaultMode: 0755

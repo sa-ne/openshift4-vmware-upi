@@ -25,6 +25,8 @@
     networks: "{u'VM Network':u'{{ vcenter_network }}'}"
     ova: "{{ ova_path }}"
     power_on: no
+  tags:
+    - upload-ova
 
 - name: Debug Append Bootstrap Ignition File
   debug:

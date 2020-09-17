@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: data
+  namespace: csr-auto-approver
+data:
+  nodes: |-
+    worker0.acm-managed-2.ocp.pwc.umbrella.local
+    worker1.acm-managed-2.ocp.pwc.umbrella.local
+    worker2.acm-managed-2.ocp.pwc.umbrella.local
+  approver.sh: |-
+    #!/bin/bash
+    EXPECTED_NODES=`cat /data/nodes`
+
+    echo "Approving CSRs for the following nodes:"
+    echo $EXPECTED_NODES
+
+    while [ true ] ;
+    do
+        PENDING_CSRS=`oc get csr | grep Pending | awk '{ print $1 }'`
+
+        for CSR in $PENDING_CSRS
+        do
+            NAME=`oc describe csr $CSR | grep "Common Name" | sed 's/.*system:node://'`
+
+            echo "Checking if $NAME is part of EXPECTED_NODES"
+
+            for NODE in $EXPECTED_NODES
+            do
+                if [ "$NAME" = "$NODE" ] ; then
+                    echo "$CSR $NAME == $NODE"
+                    oc adm certificate approve $CSR
+                fi
+            done
+        done
+
+        echo "Sleeping for 30 seconds..."
+        sleep 30
+    done

@@ -2,6 +2,8 @@
   hosts: helper
   gather_facts: no
   become: yes
+  vars_files:
+    - vault.yaml
   tasks:
     - name: Make sure bootstrap lines are commented out
       replace:
@@ -13,3 +15,16 @@
       service:
         name: haproxy
         state: reloaded
+
+    - name: Power Off Bootstrap VM
+      vmware_guest:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        cluster: "{{ vcenter_cluster }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        name: "bootstrap.{{ base_domain }}"
+        state: poweredoff
+        force: yes
+      delegate_to: localhost

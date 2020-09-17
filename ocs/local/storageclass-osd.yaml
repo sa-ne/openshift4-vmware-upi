@@ -1,8 +1,8 @@
-apiVersion: "local.storage.openshift.io/v1"
-kind: "LocalVolume"
+apiVersion: local.storage.openshift.io/v1
+kind: LocalVolume
 metadata:
-  name: "localstorage-ocs-osd"
-  namespace: "openshift-local-storage"
+  name: localstorage-ocs-osd
+  namespace: openshift-local-storage
 spec:
   nodeSelector:
     nodeSelectorTerms:
@@ -12,7 +12,9 @@ spec:
             values:
               - ''
   storageClassDevices:
-    - storageClassName: "localstorage-ocs-osd-sc"
+    - storageClassName: localstorage-ocs-osd-sc
       volumeMode: Block 
       devicePaths:
-        - /dev/sdb
+        - /dev/disk/by-id/scsi-SVMware_Virtual_disk_6000c29298dd55a14c15e8f49d287e31
+        - /dev/disk/by-id/scsi-SVMware_Virtual_disk_6000c29805a74d74c958feddd2f05e4f
+        - /dev/disk/by-id/scsi-SVMware_Virtual_disk_6000c29b5e0f72d158daeddb8e4a6225
