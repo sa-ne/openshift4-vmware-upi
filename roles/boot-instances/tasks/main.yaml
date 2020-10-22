@@ -16,7 +16,7 @@
     sleep: 10
     timeout: 1800
 
-- name: Startup (install) Master Nodes
+- name: Startup (install) All Other Nodes
   vmware_guest:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
@@ -28,9 +28,9 @@
     state: poweredon
   with_items:
     - "{{ groups[provision_group] }}"
-  when: item is search("master")
+  when: item is not search("bootstrap")
 
-- name: Wait 30 Minutes for SSH on Master Nodes
+- name: Wait 30 Minutes for SSH on All Other Nodes
   wait_for:
     host: "{{ hostvars[item].ip }}"
     port: 22
@@ -38,58 +38,4 @@
     timeout: 1800
   with_items:
     - "{{ groups[provision_group] }}"
-  when: item is search("master")
-
-- name: Startup (install) Worker Nodes
-  vmware_guest:
-    hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_username }}"
-    password: "{{ vcenter_password }}"
-    validate_certs: no
-    cluster: "{{ vcenter_cluster }}"
-    datacenter: "{{ vcenter_datacenter }}"
-    name: "{{ item }}.{{ base_domain }}"
-    state: poweredon
-  with_items:
-    - "{{ groups[provision_group] }}"
-  when: item is search("worker")
-
-- name: Wait 30 Minutes for SSH on Worker Nodes
-  wait_for:
-    host: "{{ hostvars[item].ip }}"
-    port: 22
-    sleep: 10
-    timeout: 1800
-  with_items:
-    - "{{ groups[provision_group] }}"
-  when: item is search("worker")
-
-- name: Startup (install) Other Nodes
-  vmware_guest:
-    hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_username }}"
-    password: "{{ vcenter_password }}"
-    validate_certs: no
-    cluster: "{{ vcenter_cluster }}"
-    datacenter: "{{ vcenter_datacenter }}"
-    name: "{{ item }}.{{ base_domain }}"
-    state: poweredon
-  with_items:
-    - "{{ groups[provision_group] }}"
-  when:
-    - item is not search("worker")
-    - item is not search("bootstrap")
-    - item is not search("master")
-
-- name: Wait 30 Minutes for SSH on Other Nodes
-  wait_for:
-    host: "{{ hostvars[item].ip }}"
-    port: 22
-    sleep: 10
-    timeout: 1800
-  with_items:
-    - "{{ groups[provision_group] }}"
-  when:
-    - item is not search("worker")
-    - item is not search("bootstrap")
-    - item is not search("master")
+  when: item is not search("bootstrap")

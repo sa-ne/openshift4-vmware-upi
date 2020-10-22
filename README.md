@@ -180,6 +180,20 @@ Last we want to disable the manifests that define the worker nodes:
 $ rm -f ~/upi/vmware-upi/openshift/99_openshift-cluster-api_worker-machineset-*.yaml
 ```
 
+### Adding CSR Auto Approver
+
+When you add a node to OpenShift, two CSRs will need to be approved before the node is allowed to join a cluster. If you are leveraging MachineSets the CSRs will be automatically approved. Otherwise a cluster administrator will need to manually approve the CSRs.
+
+A small script is provided to enable automatic CSR approval for our cluster. This script is injected into a container at run time using a ConfigMap along with a list of nodes. The script will only approve CSRs for nodes in the list. Doing a blanket approval of all CSRs is not recommended as it could present a security risk.
+
+To enable this script, simply copy all of the yaml files in this repositories `csr-auto-approve` directory to your clusters `manifests` directory (`~/upi/vmware-upi/manifests/` in this example).
+
+```console
+$ cp csr-auto-approve/cap-*.yaml ~/upi/vmware-upi/manifests/
+```
+
+After the yaml files are copied, you will need to edit `cap-configmap.yaml` and adjust the nodes variable to include a list of all the *worker* nodes you want the script to automatically approve CSRs for.
+
 With our manifests modified to support a UPI installation, run the OpenShift installer as follows to generate your ignition configs.
 
 ```console
@@ -241,7 +255,11 @@ $ ansible-playbook -i inventory.yaml --ask-vault-pass --skip-tags dhcpd,ipa,hapr
 
 ## Finishing the Deployment
 
-Once the VMs boot RHCOS will be installed and nodes will automatically start configuring themselves. Before the worker nodes join the cluster you will need to approve two CSRs for each node.
+Once the VMs boot RHCOS will be installed and nodes will automatically start configuring themselves.
+
+### Manually Approving CSRs
+
+As noted earlier, two CSRs will need to be approved for each node before a node can join a cluster. If you did not add the CSR Auto Approver to your clusters manifests directory you will need to manually approve node CSRs. To do this, follow the directions below:
 
 Set your `KUBECONFIG` environment variable to the kubeconfig file generated in your installation directory, for example:
 
@@ -261,7 +279,9 @@ Approve each pending CSR by hand, or approve all by running the following comman
 $ oc get csr | grep -i pending | awk '{ print $1 }' | xargs oc adm certificate approve
 ```
 
-Once all CSRs are approved, run the following command to ensure the bootstrap process completes (be sure to adjust the `--dir` flag with your working directory):
+### Confirm Bootstrapping is Complete
+
+Run the following command to ensure the bootstrap process completes (be sure to adjust the `--dir` flag with your working directory). Note this command may take a few minutes to finish while it waits for the bootstrap process to complete.
 
 ```console
 $ ./openshift-install --dir=~/upi/vmware-upi wait-for bootstrap-complete
@@ -271,18 +291,25 @@ INFO Waiting up to 30m0s for bootstrapping to complete...
 INFO It is now safe to remove the bootstrap resources
 ```
 
-Once the initial openshift-install and ansible-playbook commands complete successfully, run the following playbook to remove the bootstrap node from the various backends in haproxy.
+At this point, the bootstrap node can be shutdown and discarded. A playbook is provided to shutdown the bootstrap node and remove it from the various backends in our load balancer:
 
 ```console
 $ ansible-playbook -i inventory.yaml bootstrap-cleanup.yaml
 ```
 
-At this point the bootstrap node can be shutdown and discarded. To verify the installation completed successfully, run the following command:
+### Validating Installation
+
+Even though we are finished with the playbook execution, OpenShift may still be installing various platform components. We can run the following command to wait for/validate a successful installation:
 
 ```console
-$ oc get clusterversion
-NAME      VERSION   AVAILABLE   PROGRESSING   SINCE   STATUS
-version   4.5.2     True        False         13h     Cluster version is 4.5.2
+$ openshift-install wait-for install-complete
+INFO Waiting up to 30m0s for the cluster at https://api.vmware-upi.ocp.pwc.umbrella.local:6443 to initialize... 
+INFO Waiting up to 10m0s for the openshift-console route to be created... 
+INFO Install complete!                            
+INFO To access the cluster as the system:admin user when using 'oc', run 'export KUBECONFIG=/home/chris/upi/vmware-upi/auth/kubeconfig' 
+INFO Access the OpenShift web-console here: https://console-openshift-console.apps.vmware-upi.ocp.pwc.umbrella.local 
+INFO Login to the console with user: "kubeadmin", and password: "s3cr3t" 
+INFO Time elapsed: 0s
 ```
 
 # Installing vSphere CSI Drivers
