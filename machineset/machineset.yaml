@@ -1,0 +1,52 @@
+# Make sure to replace vsphere-upi-ghsrv with your specific Cluster API name
+# https://access.redhat.com/solutions/5307621
+
+apiVersion: machine.openshift.io/v1beta1
+kind: MachineSet
+metadata:
+  labels:
+    machine.openshift.io/cluster-api-cluster: vmware-upi-ghsrv
+  name: auto-worker
+  namespace: openshift-machine-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      machine.openshift.io/cluster-api-cluster: vmware-upi-ghsrv
+      machine.openshift.io/cluster-api-machineset: auto-worker
+  template:
+    metadata:
+      labels:
+        machine.openshift.io/cluster-api-cluster: vmware-upi-ghsrv
+        machine.openshift.io/cluster-api-machine-role: worker
+        machine.openshift.io/cluster-api-machine-type: worker
+        machine.openshift.io/cluster-api-machineset: auto-worker
+    spec:
+      metadata:
+        creationTimestamp: null
+        labels:
+          node-role.kubernetes.io/worker: ""
+      providerSpec:
+        value:
+          apiVersion: vsphereprovider.openshift.io/v1beta1
+          credentialsSecret:
+            name: vsphere-cloud-credentials
+          diskGiB: 100
+          kind: VSphereMachineProviderSpec
+          memoryMiB: 8192
+          metadata:
+            creationTimestamp: null
+          network:
+            devices:
+            - networkName: "Lab Network"
+          numCPUs: 4
+          numCoresPerSocket: 1
+          snapshot: ""
+          template: rhcos-4.5.6-x86_64-vmware.x86_64
+          userDataSecret:
+            name: worker-user-data
+          workspace:
+            datacenter: PWC
+            datastore: pool-nvme-vms
+            folder: /PWC/vm/vmware-upi
+            server: vsphere.pwc.umbrella.local
