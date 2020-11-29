@@ -1,6 +1,10 @@
-# Automated Provisioning of OpenShift 4.5 on VMware
+# Automated Provisioning of OpenShift 4.6 on VMware
 
-This repository contains a set of playbooks to help facilitate the deployment of OpenShift 4.5 on VMware.
+This repository contains a set of playbooks to help facilitate the deployment of OpenShift 4.6 on VMware.
+
+## Changes for OpenShift 4.6
+
+Please note this installer will not work with previous versions of OpenShift without some modifications to the append bootstrap configuration. This change is required because OpenShift 4.6 now uses Ignition spec v3 (previous versions of OpenShift used v2). More details on the change can be found in the [release notes](https://access.redhat.com/documentation/en-us/openshift_container_platform/4.6/html-single/release_notes/index#ocp-4-6-rhcos).
 
 ## Background
 
@@ -64,7 +68,11 @@ The following global variables will need to be modified (the default values are 
 
 |Variable|Description|
 |:---|:---|
-|ova\_path|Local path to the RHCOS OVA template|
+|provision\_group|Group of RHCOS nodes in inventory file (`pg` in the example)|
+|cleanup\_known\_hosts|Remove hosts from ssh known_hosts file|
+|ova\_remote\_path|Path to OVA mirror|
+|ova\_remote\_sha256|Path to hash of OVA|
+|ova\_local\_path|Local path to the RHCOS OVA template|
 |ova\_vm\_name|Name of the virtual machine that is created when uploading the OVA|
 |base\_domain|The base DNS domain. Not to be confused with the base domain in the UPI instructions. Our base\_domain variable in this case is `<cluster_name>`.`<base_domain>`|
 |cluster\_name|The name of our cluster (`vmware-upi` in the example)|
@@ -74,6 +82,9 @@ The following global variables will need to be modified (the default values are 
 |dhcp\_server\_subnet|IP Subnet used to configure dhcpd.conf|
 |load\_balancer\_ip|This IP address of your load balancer (the server that HAProxy will be installed on)|
 |installation\_directory|Director containing the ignition files for our cluster|
+|use\_static\_ip|New for 4.6. Assign static IPs on boot|
+|vcenter\_network|Default VM network to use|
+|vcenter\_datastore|Default datastore to use|
 
 Under the `helper` group include the FQDN for your helper node. Also make sure you configure the `httpd_port` variable and IP address.
 
@@ -276,7 +287,7 @@ $ oc get csr
 Approve each pending CSR by hand, or approve all by running the following command:
 
 ```console
-$ oc get csr | grep -i pending | awk '{ print $1 }' | xargs oc adm certificate approve
+$ oc get csr -ojson | jq -r '.items[] | select(.status=={}) | .metadata.name' | xargs oc adm certificate approve
 ```
 
 ### Confirm Bootstrapping is Complete

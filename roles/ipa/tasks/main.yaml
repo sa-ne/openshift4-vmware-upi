@@ -16,30 +16,31 @@
     var: ipa_session
     verbosity: 2
 
-- name: Create SRV Records
-  uri:
-    url: "https://{{ ipa_hostname }}/ipa/session/json"
-    validate_certs: no
-    method: POST
-    status_code: 200
-    headers:
-      Cookie: "{{ ipa_session.set_cookie }}"
-      Accept: "application/json"
-      Referer: "https://{{ ipa_hostname }}/ipa"
-    body:
-      method: dnsrecord_add
-      params:
-      - - "{{ base_domain }}."
-        - _etcd-server-ssl._tcp
-      - srv_part_priority: '0'
-        srv_part_weight: '10'
-        srv_part_port: '2380'
-        srv_part_target: "{{ item }}.{{ base_domain }}."
-    body_format: json
-  with_items:
-    - "etcd-0"
-    - "etcd-1"
-    - "etcd-2"
+# no longer needed
+#- name: Create SRV Records
+#  uri:
+#    url: "https://{{ ipa_hostname }}/ipa/session/json"
+#    validate_certs: no
+#    method: POST
+#    status_code: 200
+#    headers:
+#      Cookie: "{{ ipa_session.set_cookie }}"
+#      Accept: "application/json"
+#      Referer: "https://{{ ipa_hostname }}/ipa"
+#    body:
+#      method: dnsrecord_add
+#      params:
+#      - - "{{ base_domain }}."
+#        - _etcd-server-ssl._tcp
+#      - srv_part_priority: '0'
+#        srv_part_weight: '10'
+#        srv_part_port: '2380'
+#        srv_part_target: "{{ item }}.{{ base_domain }}."
+#    body_format: json
+#  with_items:
+#    - "etcd-0"
+#    - "etcd-1"
+#    - "etcd-2"
 
 - name: Create A/PTR Records
   uri:
@@ -87,16 +88,17 @@
     ipa_pass: "{{ ipa_password }}"
     state: present
 
-- name: Create etcd-x Records
-  ipa_dnsrecord:
-    name: "{{ hostvars[item].etcd_name }}"
-    zone_name: "{{ base_domain }}"    
-    record_type: A
-    record_value: "{{ hostvars[item].ip }}"
-    ipa_host: "{{ ipa_hostname }}"
-    ipa_user: "{{ ipa_username }}"
-    ipa_pass: "{{ ipa_password }}"
-    state: present
-  with_items:
-    - "{{ groups[provision_group] }}"
-  when: item is search("master")
+# no longer needed
+#- name: Create etcd-x Records
+#  ipa_dnsrecord:
+#    name: "{{ hostvars[item].etcd_name }}"
+#    zone_name: "{{ base_domain }}"
+#    record_type: A
+#    record_value: "{{ hostvars[item].ip }}"
+#    ipa_host: "{{ ipa_hostname }}"
+#    ipa_user: "{{ ipa_username }}"
+#    ipa_pass: "{{ ipa_password }}"
+#    state: present
+#  with_items:
+#    - "{{ groups[provision_group] }}"
+#  when: item is search("master")

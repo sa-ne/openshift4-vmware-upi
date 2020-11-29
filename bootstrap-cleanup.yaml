@@ -28,3 +28,16 @@
         state: poweredoff
         force: yes
       delegate_to: localhost
+
+    - name: Delete Bootstrap VM
+      vmware_guest:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        cluster: "{{ vcenter_cluster }}"
+        datacenter: "{{ vcenter_datacenter }}"
+        name: "bootstrap.{{ base_domain }}"
+        state: absent
+        force: yes
+      delegate_to: localhost

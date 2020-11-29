@@ -3,6 +3,8 @@
     name:
       - dhcp
     state: latest
+  tags:
+    - install-packages
 
 - name: Copy dhcpd.conf Template
   template:

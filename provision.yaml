@@ -16,6 +16,8 @@
   become: yes
   roles:
     - role: dhcpd
+      when:
+        - use_static_ip is False
       tags:
         - dhcpd
     - role: firewalld
@@ -35,4 +37,4 @@
   roles:
    - role: boot-instances
      tags:
-        - boot-instances 
+        - boot-instances

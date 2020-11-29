@@ -1,17 +1,18 @@
-- name: Delete SRV Record
-  ipa_dnsrecord:
-    name: "_etcd-server-ssl._tcp"
-    zone_name: "{{ base_domain }}"
-    record_type: SRV
-    record_value: "0 10 2380 {{ item }}.{{ base_domain }}."
-    ipa_host: "{{ ipa_hostname }}"
-    ipa_user: "{{ ipa_username }}"
-    ipa_pass: "{{ ipa_password }}"
-    state: absent
-  with_items:
-    - etcd-0
-    - etcd-1
-    - etcd-2
+# no longer needed
+#- name: Delete SRV Record
+#  ipa_dnsrecord:
+#    name: "_etcd-server-ssl._tcp"
+#    zone_name: "{{ base_domain }}"
+#    record_type: SRV
+#    record_value: "0 10 2380 {{ item }}.{{ base_domain }}."
+#    ipa_host: "{{ ipa_hostname }}"
+#    ipa_user: "{{ ipa_username }}"
+#    ipa_pass: "{{ ipa_password }}"
+#    state: absent
+#  with_items:
+#    - etcd-0
+#    - etcd-1
+#    - etcd-2
     
 - name: Delete A Records
   ipa_dnsrecord:
@@ -64,17 +65,17 @@
     ipa_pass: "{{ ipa_password }}"
     state: absent
 
-- name: Delete etcd-x Records
-  ipa_dnsrecord:
-    name: "{{ hostvars[item].etcd_name }}"
-    zone_name: "{{ base_domain }}"
-    record_type: A
-    record_value: "{{ hostvars[item].ip }}"
-    ipa_host: "{{ ipa_hostname }}"
-    ipa_user: "{{ ipa_username }}"
-    ipa_pass: "{{ ipa_password }}"
-    state: absent
-  with_items:
-    - "{{ groups[provision_group] }}"
-  when: item is search("master")
-
+# no longer needed
+#- name: Delete etcd-x Records
+#  ipa_dnsrecord:
+#    name: "{{ hostvars[item].etcd_name }}"
+#    zone_name: "{{ base_domain }}"
+#    record_type: A
+#    record_value: "{{ hostvars[item].ip }}"
+#    ipa_host: "{{ ipa_hostname }}"
+#    ipa_user: "{{ ipa_username }}"
+#    ipa_pass: "{{ ipa_password }}"
+#    state: absent
+#  with_items:
+#    - "{{ groups[provision_group] }}"
+#  when: item is search("master")

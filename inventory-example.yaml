@@ -2,124 +2,179 @@
 all:
   vars:
     provision_group: pg
-    ova_path: /tmp/rhcos-4.5.2-x86_64-vmware.x86_64.ova
-    ova_vm_name: rhcos-4.5.2-x86_64-vmware.x86_64
-    cluster_name: vmware-upi
-    base_domain: vmware-upi.ocp.pwc.umbrella.local
+    cleanup_known_hosts: True
+    ova_remote_path: https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/latest/latest/rhcos-vmware.x86_64.ova
+    ova_remote_sha256: https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/latest/latest/sha256sum.txt
+    ova_local_path: /tmp/rhcos-vmware.x86_64.ova
+    ova_vm_name: rhcos-vmware.x86_64-alice
+    cluster_name: alice
+    base_domain: alice.ocp.pwc.umbrella.local
     dhcp_server_dns_servers: 172.16.10.11
     dhcp_server_gateway: 172.16.10.254
     dhcp_server_subnet_mask: 255.255.255.0
     dhcp_server_subnet: 172.16.10.0
-    installation_directory: ~/upi/vmware-upi
+    use_static_ip: True
+    installation_directory: /home/chris/upi/alice
+    vcenter_network: Lab Network
+    vcenter_datastore: pool-spinning-vms
   children:
     helper:
       hosts:
-        lb.vmware-upi.ocp.pwc.umbrella.local:
-          ansible_host: 172.16.10.171
+        lb.alice.ocp.pwc.umbrella.local:
+          ip: 172.16.10.172
           httpd_port: 8080
     pg:
       hosts:
         bootstrap:
           ip: 172.16.10.131
+          gateway: 172.16.10.254
+          mask: 255.255.255.0
+          dns: 172.16.10.11
           memory: 24576
           cores: 2
-          datastore: pool-nvme-vms
+          datastore: pool-spinning-vms
+          disks:
+            - size_gb: 100
+              type: thin
+              state: present
+              scsi_controller: 0
+              unit_number: 0
+              datastore: pool-spinning-vms
         master0:
           etcd_name: etcd-0
           ip: 172.16.10.132
+          gateway: 172.16.10.254
+          mask: 255.255.255.0
+          dns: 172.16.10.11
           memory: 24576
           cores: 4
           datastore: r420-esxi-1-nvme
+          disks:
+            - size_gb: 100
+              type: thin
+              state: present
+              scsi_controller: 0
+              unit_number: 0
+              datastore: r420-esxi-1-nvme
         master1:
           etcd_name: etcd-1
           ip: 172.16.10.133
+          gateway: 172.16.10.254
+          mask: 255.255.255.0
+          dns: 172.16.10.11
           memory: 24576
           cores: 4
           datastore: r420-esxi-2-nvme
+          disks:
+            - size_gb: 100
+              type: thin
+              state: present
+              scsi_controller: 0
+              unit_number: 0
+              datastore: r420-esxi-2-nvme
         master2:
           etcd_name: etcd-2
           ip: 172.16.10.134
+          gateway: 172.16.10.254
+          mask: 255.255.255.0
+          dns: 172.16.10.11
           memory: 24576
           cores: 4
           datastore: r710-esxi-1-nvme
+          disks:
+            - size_gb: 100
+              type: thin
+              state: present
+              scsi_controller: 0
+              unit_number: 0
+              datastore: r710-esxi-1-nvme
         worker0:
           ip: 172.16.10.135
+          gateway: 172.16.10.254
+          mask: 255.255.255.0
+          dns: 172.16.10.11
           memory: 24576
           cores: 4
-          datastore: pool-nvme-vms
+          datastore: r420-esxi-1-nvme
+          disks:
+            - size_gb: 100
+              type: thin
+              state: present
+              scsi_controller: 0
+              unit_number: 0
+              datastore: r420-esxi-1-nvme
         worker1:
           ip: 172.16.10.136
+          gateway: 172.16.10.254
+          mask: 255.255.255.0
+          dns: 172.16.10.11
           memory: 24576
           cores: 4
-          datastore: pool-nvme-vms
+          datastore: r420-esxi-2-nvme
+          disks:
+            - size_gb: 100
+              type: thin
+              state: present
+              scsi_controller: 0
+              unit_number: 0
+              datastore: r420-esxi-2-nvme
         worker2:
           ip: 172.16.10.137
+          gateway: 172.16.10.254
+          mask: 255.255.255.0
+          dns: 172.16.10.11
           memory: 24576
           cores: 4
-          datastore: pool-nvme-vms
-        ocs-node0:
-          ip: 172.16.10.138
-          memory: 49152
-          cores: 10
-          datastore: pool-nvme-vms
-          hypervisor: r420-esxi-1.pwc.umbrella.local
+          datastore: r710-esxi-1-nvme
           disks:
-          - size_gb: 800
-            type: thin
-            datastore: r420-esxi-1-nvme
-            scsi_controller: 0
-            unit_number: 1
-          - size_gb: 5
-            type: thin
-            datastore: r420-esxi-1-nvme
-            scsi_controller: 0
-            unit_number: 2
-        ocs-node1:
-          ip: 172.16.10.139
-          memory: 49152
-          cores: 10
-          datastore: pool-nvme-vms
-          hypervisor: r420-esxi-2.pwc.umbrella.local
-          disks:
-          - size_gb: 800
-            type: thin
-            datastore: r420-esxi-2-nvme
-            scsi_controller: 0
-            unit_number: 1
-          - size_gb: 5
-            type: thin
-            datastore: r420-esxi-2-nvme
-            scsi_controller: 0
-            unit_number: 2
-        ocs-node2:
-          ip: 172.16.10.140
-          memory: 49152
-          cores: 10
-          datastore: pool-nvme-vms
-          hypervisor: r710-esxi-1.pwc.umbrella.local
-          disks:
-          - size_gb: 800
-            type: thin
-            datastore: r710-esxi-1-nvme
-            scsi_controller: 0
-            unit_number: 1
-          - size_gb: 5
-            type: thin
-            datastore: r710-esxi-1-nvme
-            scsi_controller: 0
-            unit_number: 2
+            - size_gb: 100
+              type: thin
+              state: present
+              scsi_controller: 0
+              unit_number: 0
+              datastore: r710-esxi-1-nvme
         infra-node0:
           ip: 172.16.10.141
+          gateway: 172.16.10.254
+          mask: 255.255.255.0
+          dns: 172.16.10.11
           memory: 49152
           cores: 10
-          datastore: pool-nvme-vms
+          datastore: r420-esxi-1-nvme
+          disks:
+            - size_gb: 100
+              type: thin
+              state: present
+              scsi_controller: 0
+              unit_number: 0
+              datastore: r420-esxi-1-nvme
         infra-node1:
           ip: 172.16.10.142
+          gateway: 172.16.10.254
+          mask: 255.255.255.0
+          dns: 172.16.10.11
           memory: 49152
           cores: 10
-          datastore: pool-nvme-vms
+          datastore: r420-esxi-2-nvme
+          disks:
+            - size_gb: 100
+              type: thin
+              state: present
+              scsi_controller: 0
+              unit_number: 0
+              datastore: r420-esxi-2-nvme
         infra-node2:
           ip: 172.16.10.143
+          gateway: 172.16.10.254
+          mask: 255.255.255.0
+          dns: 172.16.10.11
           memory: 49152
           cores: 10
-          datastore: pool-nvme-vms
+          datastore: r710-esxi-1-nvme
+          disks:
+            - size_gb: 100
+              type: thin
+              state: present
+              scsi_controller: 0
+              unit_number: 0
+              datastore: r710-esxi-1-nvme

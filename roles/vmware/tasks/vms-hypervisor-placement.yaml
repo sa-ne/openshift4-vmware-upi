@@ -1,0 +1,46 @@
+- name: Setup vApp Properties
+  set_fact:
+    vapp_properties:
+      - key: "guestinfo.ignition.config.data"
+        value: "{{ lookup('template', 'templates/append-bootstrap.j2') | to_json | b64encode }}"
+      - key: "guestinfo.ignition.config.data.encoding"
+        value: base64
+      - key: "disk.EnableUUID"
+        value: "TRUE"
+
+- name: Append Static IP Options
+  set_fact:
+    vapp_properties: >-
+      {{
+        vapp_properties +
+        [
+          {
+            'key': 'guestinfo.afterburn.initrd.network-kargs',
+            'value': 'ip={{ hostvars[item].ip }}::{{ hostvars[item].gateway }}:{{ hostvars[item].mask }}:::none nameserver={{ hostvars[item].dns }}'
+          }
+        ]
+      }}
+  when:
+    - use_static_ip
+
+- name: Create VMs (Hypervisor Placement)
+  vmware_guest:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: no
+    datacenter: "{{ vcenter_datacenter }}"
+    datastore: "{{ hostvars[item].datastore }}"
+    disk: "{{ hostvars[item].disk | default([]) | list }}"
+    esxi_hostname: "{{ hostvars[item].hypervisor }}"
+    folder: "/{{ vcenter_datacenter }}/vm/{{ cluster_name }}"
+    guest_id: rhel8_64Guest
+    hardware:
+      memory_mb: "{{ hostvars[item].memory }}"
+      num_cpus: "{{ hostvars[item].cores }}"
+      num_cpu_cores_per_socket: "{{ hostvars[item].cores }}"
+    name: "{{ item }}.{{ base_domain }}"
+    state: present
+    template: "{{ ova_vm_name }}"
+    customvalues: "{{ vapp_properties }}"
+  register: vmware_guest_results

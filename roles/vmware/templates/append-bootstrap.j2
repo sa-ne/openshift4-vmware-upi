@@ -1,18 +1,12 @@
 {
   "ignition": {
     "config": {
-      "append": [
+      "merge": [
         {
-          "source": "http://{{ groups['helper'][0] }}:8080/ignition-downloader.php",
-          "verification": {}
+          "source": "http://{{ groups['helper'][0] }}:8080/ignition-downloader.php"
         }
       ]
     },
-    "timeouts": {},
-    "version": "2.1.0"
-  },
-  "networkd": {},
-  "passwd": {},
-  "storage": {},
-  "systemd": {}
+    "version": "3.1.0"
+  }
 }
