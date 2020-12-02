@@ -17,7 +17,7 @@
   roles:
     - role: dhcpd
       when:
-        - use_static_ip is False
+        - not use_static_ip
       tags:
         - dhcpd
     - role: firewalld
