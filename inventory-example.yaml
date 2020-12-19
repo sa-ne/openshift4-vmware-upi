@@ -31,15 +31,18 @@ all:
           mask: 255.255.255.0
           dns: 172.16.10.11
           memory: 24576
-          cores: 2
-          datastore: pool-spinning-vms
+          mem_reservation: 24576
+          cpu_reservation: 8000 # 4 x 2.00GHz * 1000hz
+          cores: 4
+          datastore: r420-esxi-1-nvme
+          latencySensitivity: High
           disks:
             - size_gb: 100
               type: thin
               state: present
               scsi_controller: 0
               unit_number: 0
-              datastore: pool-spinning-vms
+              datastore: r420-esxi-1-nvme
         master0:
           etcd_name: etcd-0
           ip: 172.16.10.132
@@ -47,8 +50,11 @@ all:
           mask: 255.255.255.0
           dns: 172.16.10.11
           memory: 24576
+          mem_reservation: 24576
+          cpu_reservation: 8000 # 4 x 2.00GHz * 1000hz
           cores: 4
           datastore: r420-esxi-1-nvme
+          latencySensitivity: High
           disks:
             - size_gb: 100
               type: thin
@@ -63,8 +69,11 @@ all:
           mask: 255.255.255.0
           dns: 172.16.10.11
           memory: 24576
+          mem_reservation: 24576
+          cpu_reservation: 8000 # 4 x 2.00GHz * 1000hz
           cores: 4
           datastore: r420-esxi-2-nvme
+          latencySensitivity: High
           disks:
             - size_gb: 100
               type: thin
@@ -79,8 +88,11 @@ all:
           mask: 255.255.255.0
           dns: 172.16.10.11
           memory: 24576
+          mem_reservation: 24576
+          cpu_reservation: 12280 # 4 x 3.07GHz * 1000hz
           cores: 4
           datastore: r710-esxi-1-nvme
+          latencySensitivity: High
           disks:
             - size_gb: 100
               type: thin
@@ -133,6 +145,69 @@ all:
               scsi_controller: 0
               unit_number: 0
               datastore: r710-esxi-1-nvme
+        ocs-node0:
+          ip: 172.16.10.138
+          gateway: 172.16.10.254
+          mask: 255.255.255.0
+          dns: 172.16.10.11
+          memory: 49152
+          cores: 10
+          datastore: r420-esxi-1-nvme
+          hypervisor: r420-esxi-1.pwc.umbrella.local
+          disks:
+          - size_gb: 100
+            type: thin
+            state: present
+            scsi_controller: 0
+            unit_number: 0
+            datastore: r420-esxi-1-nvme
+          - size_gb: 1024
+            type: thin
+            datastore: pool-spinning-vms
+            scsi_controller: 0
+            unit_number: 1
+        ocs-node1:
+          ip: 172.16.10.139
+          gateway: 172.16.10.254
+          mask: 255.255.255.0
+          dns: 172.16.10.11
+          memory: 49152
+          cores: 10
+          datastore: r420-esxi-2-nvme
+          hypervisor: r420-esxi-2.pwc.umbrella.local
+          disks:
+          - size_gb: 100
+            type: thin
+            state: present
+            scsi_controller: 0
+            unit_number: 0
+            datastore: r420-esxi-2-nvme
+          - size_gb: 1024
+            type: thin
+            datastore: pool-spinning-vms
+            scsi_controller: 0
+            unit_number: 1
+        ocs-node2:
+          ip: 172.16.10.140
+          gateway: 172.16.10.254
+          mask: 255.255.255.0
+          dns: 172.16.10.11
+          memory: 49152
+          cores: 10
+          datastore: r710-esxi-1-nvme
+          hypervisor: r710-esxi-1.pwc.umbrella.local
+          disks:
+          - size_gb: 100
+            type: thin
+            state: present
+            scsi_controller: 0
+            unit_number: 0
+            datastore: r710-esxi-1-nvme
+          - size_gb: 1024
+            type: thin
+            datastore: pool-spinning-vms
+            scsi_controller: 0
+            unit_number: 1
         infra-node0:
           ip: 172.16.10.141
           gateway: 172.16.10.254

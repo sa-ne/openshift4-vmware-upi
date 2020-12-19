@@ -90,6 +90,26 @@ Under the `helper` group include the FQDN for your helper node. Also make sure y
 
 For the individual node configuration, be sure to update the hosts in the `pg` hostgroup. Several parameters will need to be changed for _each_ host including `ip`, `memory`, etc. Match up your VMware environment with the inventory file.
 
+A list of available options for individual nodes is listed below:
+
+|Variable|Description|
+|:---|:---|
+|ip|IP Address of node|
+|gateway|Network gateway (only used with Static IP option)|
+|mask|Network mask (only used with Static IP option)|
+|dns|DNS server (only used with Static IP option)|
+|memory|Member in MB|
+|mem_reservation|Amount of memory to reserve in MB (optional)|
+|cpu_reservation|Amount of CPU to reserve in HZ (optional)|
+|cores|Number of vCPUs|
+|datastore|Default datastore|
+|latencySensitivity|Toggle latency sensitivity option (optional)|
+|disks|List of disks (see inventory-example.yaml for examples)|
+
+Even if you are not defining multiple disks for each VM, this option can be used to resize the primary disk. Set `scsi_controller` and `unit_number` to 0.
+
+The `cpu_reservation` field is calculated using HZ. For example, if the physical CPU is rated at 2.0GHz and your VM has 4 vCPUs, to reserve all 4 vCPUs the value is 4 x 2.0GHz * 1000Hz = 8000Hz.
+
 ## Creating an Ansible Vault
 
 In the directory that contains your cloned copy of this git repo, create an Ansible vault called vault.yaml as follows:

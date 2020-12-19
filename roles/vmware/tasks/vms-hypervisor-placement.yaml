@@ -1,4 +1,5 @@
-- name: Setup vApp Properties
+---
+- name: Setup vApp Properties for {{ item }}
   set_fact:
     vapp_properties:
       - key: "guestinfo.ignition.config.data"
@@ -8,7 +9,28 @@
       - key: "disk.EnableUUID"
         value: "TRUE"
 
-- name: Append Static IP Options
+- name: Set Latency Sensitivity to High for {{ item }}
+  set_fact:
+    vapp_properties: >-
+      {{
+        vapp_properties +
+        [
+          {
+            'key': 'sched.cpu.latencySensitivity',
+            'value': '{{ hostvars[item].latencySensitivity }}'
+          }
+        ]
+      }}
+  when:
+    - hostvars[item].latencySensitivity is defined
+
+- name: Define IP String for {{ item }}
+  set_fact:
+    ip_string: "ip={{ hostvars[item].ip }}::{{ hostvars[item].gateway }}:{{ hostvars[item].mask }}:::none nameserver={{ hostvars[item].dns }}"
+  when:
+    - use_static_ip
+
+- name: Append Static IP Options for {{ item }}
   set_fact:
     vapp_properties: >-
       {{
@@ -16,14 +38,19 @@
         [
           {
             'key': 'guestinfo.afterburn.initrd.network-kargs',
-            'value': 'ip={{ hostvars[item].ip }}::{{ hostvars[item].gateway }}:{{ hostvars[item].mask }}:::none nameserver={{ hostvars[item].dns }}'
+            'value': ip_string
           }
         ]
       }}
   when:
     - use_static_ip
 
-- name: Create VMs (Hypervisor Placement)
+- name: Debug vapp_properties for {{ item }}
+  debug:
+    var: vapp_properties
+    verbosity: 1
+
+- name: Create VMs (Hypervisor Placement) for {{ item }}
   vmware_guest:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
@@ -39,6 +66,8 @@
       memory_mb: "{{ hostvars[item].memory }}"
       num_cpus: "{{ hostvars[item].cores }}"
       num_cpu_cores_per_socket: "{{ hostvars[item].cores }}"
+      mem_reservation: "{{ hostvars[item].mem_reservation | default(0) }}"
+      cpu_reservation: "{{ hostvars[item].cpu_reservation | default(0) }}"
     name: "{{ item }}.{{ base_domain }}"
     state: present
     template: "{{ ova_vm_name }}"
