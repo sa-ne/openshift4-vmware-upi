@@ -105,6 +105,7 @@ A list of available options for individual nodes is listed below:
 |datastore|Default datastore|
 |latencySensitivity|Toggle latency sensitivity option (optional)|
 |disks|List of disks (see inventory-example.yaml for examples)|
+|nested_virt|Boolean to expose hardware assisted virtualization instructions to node (optional)|
 
 Even if you are not defining multiple disks for each VM, this option can be used to resize the primary disk. Set `scsi_controller` and `unit_number` to 0.
 

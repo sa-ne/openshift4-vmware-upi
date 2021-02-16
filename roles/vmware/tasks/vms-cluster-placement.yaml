@@ -68,6 +68,7 @@
       num_cpu_cores_per_socket: "{{ hostvars[item].cores }}"
       mem_reservation: "{{ hostvars[item].mem_reservation | default(0) }}"
       cpu_reservation: "{{ hostvars[item].cpu_reservation | default(0) }}"
+      nested_virt: "{{ hostvars[item].nested_virt | default(False) }}"
     name: "{{ item }}.{{ base_domain }}"
     state: present
     template: "{{ ova_vm_name }}"
