@@ -14,6 +14,7 @@
 - name: Setup Load Balancer Host
   hosts: helper
   become: yes
+  gather_facts: no
   roles:
     - role: dhcpd
       when:
@@ -38,3 +39,12 @@
    - role: boot-instances
      tags:
         - boot-instances
+
+- name: Post Cluster Configuration
+  hosts: localhost
+  vars_files:
+    - vault.yaml
+  roles:
+    - role: sealed-secrets
+      tags:
+        - sealed-secrets

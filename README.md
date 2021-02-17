@@ -46,7 +46,7 @@ The HA proxy installation on the helper node will load balance ingress to worker
 
 # Installing
 
-Please read through the [Installing on vSphere](https://access.redhat.com/documentation/en-us/openshift_container_platform/4.5/html-single/installing_on_vsphere/index#installing-vsphere) installation documentation before proceeding.
+Please read through the [Installing on vSphere](https://access.redhat.com/documentation/en-us/openshift_container_platform/4.6/html-single/installing_on_vsphere/index#installing-vsphere) installation documentation before proceeding.
 
 ## Clone this Repository
 
@@ -85,6 +85,8 @@ The following global variables will need to be modified (the default values are 
 |use\_static\_ip|New for 4.6. Assign static IPs on boot|
 |vcenter\_network|Default VM network to use|
 |vcenter\_datastore|Default datastore to use|
+|sealed\_secrets\_keypair\_name|Name of the secret resource that contains your custom keypair|
+|sealed\_secrets\_namespace|Namespace used for sealed secret controller|
 
 Under the `helper` group include the FQDN for your helper node. Also make sure you configure the `httpd_port` variable and IP address.
 
@@ -133,6 +135,8 @@ vcenter_network: "Lab Network"
 ipa_hostname: "idm1.umbrella.local"
 ipa_username: "admin"
 ipa_password: "changeme"
+sealed_secrets_keypair_crt: "OQKW0=" # base64 encoded certificate
+sealed_secrets_keypair_key: "JJL222=" # base64 encoded key
 ```
 
 ## Download the OpenShift Installer
@@ -232,17 +236,7 @@ With our manifests modified to support a UPI installation, run the OpenShift ins
 $ ./openshift-install create ignition-configs --dir=~/upi/vmware-upi
 ```
 
-## Staging OVA File
-
-First we need to obtain the RHCOS OVA file. Place this in the same location referenced in the variable `ova_path` in your inventory file (`/tmp` in this example).
-
-```console
-$ curl -o /tmp/rhcos-4.5.2-x86_64-vmware.x86_64.ova https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/4.5/latest/rhcos-4.5.2-x86_64-vmware.x86_64.ova
-```
-
-This template will automatically get uploaded to VMware when the playbook runs.
-
-## Deploying OpenShift 4.5 on VMware with Ansible
+## Deploying OpenShift 4.6 on VMware with Ansible
 
 To kick off the installation, simply run the provision.yaml playbook as follows:
 
@@ -284,6 +278,8 @@ All three roles could be skipped using the following command:
 ```console
 $ ansible-playbook -i inventory.yaml --ask-vault-pass --skip-tags dhcpd,ipa,haproxy provision.yaml
 ```
+
+Also, the playbooks will automatically attempt to deploy a Sealed Secrets controller. More information about sealed secrets can be found [here]#deploying-sealed-secrets-controller). This is an optional component, if you wish to disable the sealed secrets deployment you may omit the various configuration variables and skip over the role using `--skip-tags sealed-secrets`.
 
 ## Finishing the Deployment
 
@@ -343,6 +339,56 @@ INFO Access the OpenShift web-console here: https://console-openshift-console.ap
 INFO Login to the console with user: "kubeadmin", and password: "s3cr3t" 
 INFO Time elapsed: 0s
 ```
+
+# Deploying Sealed Secrets Controller
+
+Many post installation tasks can be handled by Argo CD, Red Hat Advanced Cluster Manager (RHACM) or similar tools. When using a GitOps approach for declarative management, sensitive information like Secrets need to be protected. A vault is commonly used in this scenario, but using Sealed Secrets is an alternative approach that allows sensitive information to be encrypted and stored directly in git.
+
+## sealed-secrets Role
+
+The role provided in this repository will deploy Bitnami's controller and other associated CRDs and resources. You can read more about sealed secrets [here](https://github.com/bitnami-labs/sealed-secrets). This documentation assumes you are already familiar wih sealed secrets. The role (`sealed-secrets`) requires you to provide your own RSA key pair for the sealed secrets controller to use. There are several advantages to doing this, but mainly we want to be able to create `SealedSecrets` custom resources *before* our target cluster is provisioned (ultimately to support a GitOps workflow for our cluster configuration).
+
+This role is enabled by default as part of the provisioning process, however it can be omitted when running the provisioning playbook by passing `--skip-tags sealed-secrets` to the `ansible-playbook` command. 
+
+First we need to generate our own key pair. In the root of this repository there is a directory called `sealed-secrets`. It contains some helpful scripts we can use to configure our sealed secrets deployment. There is a bash variables file (`variables.sh`) that contains some configuration attributes for our key pair. Adjust the variables to suit your environment.
+
+|Variable|Description|
+|:---|:---|
+|PRIVATEKEY|Location of private key file (default `tls.key`)|
+|PUBLICKEY|Location of certificate file (default `tls.crt`)|
+|NAMESPACE|Namespace where the sealed secrets controller is installed (default `sealed-secrets`)|
+|SECRETNAME|Name of the secret that will contain our custom key pair|
+|DAYS|Length of time the certificate is valid (default 2 years or 730 days)|
+
+## Generating RSA Key Pair
+
+Once the variables in `variables.sh` are set, run the script `generate-key-pair.sh` to generate the key pair. Since the key pair files will be stored in a Kubernetes Secret, we need to base64 encode the data. For example, to base64 encode the key run the following command:
+
+```console
+$ base64 -w0 tls.key
+```
+
+Take the output of that command and store it in your Ansible vault using the variable `sealed_secrets_keypair_key`. Base64 encode the certificate file as well, and add it in the vault to the variable `sealed_secrets_keypair_crt`.
+
+## Independently Deploy Sealed Secrets Controller
+
+The sealed secrets controller is installed by default. If the role was skipped during your initial cluster deployment, you can run it using the following command:
+
+```
+$ ansible-playbook --ask-vault-pass -i inventory.yaml --tags sealed-secrets provision.yaml
+```
+
+Using the `--tags` option, this will ensure the `sealed-secrets` role is the only role that runs from the provision playbook.
+
+## Generating a Sealed Secret
+
+Along with the key pair generator, a helper script is provided to assist with the generation of sealed secrets. Use `generate-sealed-secret.sh` to generate a SealedSecret CR. It takes two parameters, the first is the scope (which can be either `strict`, `namespace-wide` or `cluster-wide`). The second argument is the yaml file which contains the secret resource (see `example-secret.yaml` for reference).
+
+```console
+$ ./generate-sealed-secret.sh strict example-secret.yaml
+```
+
+The output of this command is the encrypted SealedSecret resource that can be stored in git and ultimately be used to recreate the Secret resource in the target cluster.
 
 # Installing vSphere CSI Drivers
 
