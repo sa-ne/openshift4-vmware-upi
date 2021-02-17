@@ -279,7 +279,7 @@ All three roles could be skipped using the following command:
 $ ansible-playbook -i inventory.yaml --ask-vault-pass --skip-tags dhcpd,ipa,haproxy provision.yaml
 ```
 
-Also, the playbooks will automatically attempt to deploy a Sealed Secrets controller. More information about sealed secrets can be found [here]#deploying-sealed-secrets-controller). This is an optional component, if you wish to disable the sealed secrets deployment you may omit the various configuration variables and skip over the role using `--skip-tags sealed-secrets`.
+Also, the playbooks will automatically attempt to deploy a Sealed Secrets controller. More information about sealed secrets can be found [here](#deploying-sealed-secrets-controller). This is an optional component, if you wish to disable the sealed secrets deployment you may omit the various configuration variables and skip over the role using `--skip-tags sealed-secrets`.
 
 ## Finishing the Deployment
 
