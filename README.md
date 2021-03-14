@@ -29,7 +29,7 @@ To leverage the automation in this guide you need to bring the following:
   * Must have Proper Forward/Reverse Zones Configured
 * RHEL 7 Server which will act as a Web Server, Load Balancer and DHCP Server
   * Only Repository Requirement is `rhel-7-server-rpms`
- 
+
 ## Naming Convention
 
 Bootstrap, master and worker hostnames must use the following format:
@@ -248,19 +248,19 @@ The order of operations for the `provision.yaml` playbook is as follows:
 
 * Create DNS Entries in IdM
 * Create VMs in VMware
-	- Create Appropriate Folder Structure
-	- Upload OVA Template
-	- Create Virtual Machines (cloned from OVA template)
+  - Create Appropriate Folder Structure
+  - Upload OVA Template
+  - Create Virtual Machines (cloned from OVA template)
 * Configure Load Balancer Host
-	- Install and Configure dhcpd
-	- Install and Configure HAProxy
-	- Install and Configure httpd
+  - Install and Configure dhcpd
+  - Install and Configure HAProxy
+  - Install and Configure httpd
 * Boot VMs
-	- Start bootstrap VM and wait for SSH
-	- Start master VMs and wait for SSH
-	- Start worker VMs and wait for SSH
-	- Start other VMs and wait for SSH
-	
+  - Start bootstrap VM and wait for SSH
+  - Start master VMs and wait for SSH
+  - Start worker VMs and wait for SSH
+  - Start other VMs and wait for SSH
+
 Once the playbook completes (should take several minutes) continue with the instructions.
 
 #### Skipping Portions of Automation
