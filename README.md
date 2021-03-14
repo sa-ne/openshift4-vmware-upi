@@ -1,10 +1,10 @@
-# Automated Provisioning of OpenShift 4.6 on VMware
+# Automated Provisioning of OpenShift 4.7 on VMware
 
-This repository contains a set of playbooks to help facilitate the deployment of OpenShift 4.6 on VMware.
+This repository contains a set of playbooks to help facilitate the deployment of OpenShift 4.7 on VMware.
 
-## Changes for OpenShift 4.6
+## Changes for OpenShift 4.6+
 
-Please note this installer will not work with previous versions of OpenShift without some modifications to the append bootstrap configuration. This change is required because OpenShift 4.6 now uses Ignition spec v3 (previous versions of OpenShift used v2). More details on the change can be found in the [release notes](https://access.redhat.com/documentation/en-us/openshift_container_platform/4.6/html-single/release_notes/index#ocp-4-6-rhcos).
+Please note this installer will not work with previous versions of OpenShift without some modifications to the append bootstrap configuration. This change is required because OpenShift 4.6+ now uses Ignition spec v3 (previous versions of OpenShift used v2). More details on the change can be found in the [release notes](https://access.redhat.com/documentation/en-us/openshift_container_platform/4.6/html-single/release_notes/index#ocp-4-6-rhcos).
 
 ## Background
 
@@ -46,7 +46,7 @@ The HA proxy installation on the helper node will load balance ingress to worker
 
 # Installing
 
-Please read through the [Installing on vSphere](https://access.redhat.com/documentation/en-us/openshift_container_platform/4.6/html-single/installing_on_vsphere/index#installing-vsphere) installation documentation before proceeding.
+Please read through the [Installing on vSphere](https://access.redhat.com/documentation/en-us/openshift_container_platform/4.7/html-single/installing/index#installing-vsphere) installation documentation before proceeding.
 
 ## Clone this Repository
 
@@ -236,7 +236,7 @@ With our manifests modified to support a UPI installation, run the OpenShift ins
 $ ./openshift-install create ignition-configs --dir=~/upi/vmware-upi
 ```
 
-## Deploying OpenShift 4.6 on VMware with Ansible
+## Deploying OpenShift 4.7 on VMware with Ansible
 
 To kick off the installation, simply run the provision.yaml playbook as follows:
 
