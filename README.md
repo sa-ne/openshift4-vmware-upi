@@ -1,6 +1,8 @@
+# Automated Provisioning of OpenShift 4.7 on VMware
+
 [![GitHub Super-Linter](https://github.com/sa-ne/openshift4-vmware-upi/workflows/Lint%20Code%20Base/badge.svg)](https://github.com/marketplace/actions/super-linter)
 
-# Automated Provisioning of OpenShift 4.7 on VMware
+----
 
 This repository contains a set of playbooks to help facilitate the deployment of OpenShift 4.7 on VMware.
 
