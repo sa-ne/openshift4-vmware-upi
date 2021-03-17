@@ -1,0 +1,13 @@
+---
+vcenter_hostname: "vsphere.pwc.umbrella.local"
+vcenter_username: "administrator@vsphere.local"
+vcenter_password: "changeme"
+vcenter_datacenter: "PWC"
+vcenter_cluster: "Primary"
+vcenter_datastore: "pool-nvme-vms"
+vcenter_network: "Lab Network"
+ipa_hostname: "idm1.umbrella.local"
+ipa_username: "admin"
+ipa_password: "changeme"
+sealed_secrets_keypair_crt: "OQKW0=" # base64 encoded certificate
+sealed_secrets_keypair_key: "JJL222=" # base64 encoded key
