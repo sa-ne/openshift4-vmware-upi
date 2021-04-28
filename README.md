@@ -104,7 +104,7 @@ A list of available options for individual nodes is listed below:
 |gateway|Network gateway (only used with Static IP option)|
 |mask|Network mask (only used with Static IP option)|
 |dns|DNS server (only used with Static IP option)|
-|memory|Member in MB|
+|memory|Memory in MB|
 |mem_reservation|Amount of memory to reserve in MB (optional)|
 |cpu_reservation|Amount of CPU to reserve in HZ (optional)|
 |cores|Number of vCPUs|
