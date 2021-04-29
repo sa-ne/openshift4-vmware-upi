@@ -26,7 +26,7 @@
 
 - name: Define IP String for {{ item }}
   set_fact:
-    ip_string: "ip={{ hostvars[item].ip }}::{{ hostvars[item].gateway }}:{{ hostvars[item].mask }}::{{ hostvars[item].interface | default("") }}:none nameserver={{ hostvars[item].dns }}"
+    ip_string: "ip={{ hostvars[item].ip }}::{{ hostvars[item].gateway }}:{{ hostvars[item].mask }}::{{ hostvars[item].interface | default('') }}:none nameserver={{ hostvars[item].dns }}"
   when:
     - use_static_ip
 
