@@ -133,6 +133,13 @@ backend backend_443
     server {{ item }} {{ hostvars[item].ip }}:443 check
 {% endif %}
 {% endfor %}
+{% if groups[provision_group] | count == 4 %}
+{% for item in groups[provision_group] %}
+{% if 'bootstrap' not in item %}
+    server {{ item }} {{ hostvars[item].ip }}:443 check
+{% endif %}
+{% endfor %}
+{% endif %}
 
 backend backend_80
     mode tcp
@@ -148,6 +155,13 @@ backend backend_80
     server {{ item }} {{ hostvars[item].ip }}:80 check
 {% endif %}
 {% endfor %}
+{% if groups[provision_group] | count == 4 %}
+{% for item in groups[provision_group] %}
+{% if 'bootstrap' not in item %}
+    server {{ item }} {{ hostvars[item].ip }}:80 check
+{% endif %}
+{% endfor %}
+{% endif %}
 
 # Enable stats on :9000/haproxy_stats (no auth required)
 
