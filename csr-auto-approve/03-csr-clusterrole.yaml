@@ -13,8 +13,7 @@ rules:
     - get
     - list
 - apiGroups:
-    - certificatesigningrequests.certificates.k8s.io
-    - signers.certificates.k8s.io
+    - certificates.k8s.io
   resources:
     - '*'
   verbs:
