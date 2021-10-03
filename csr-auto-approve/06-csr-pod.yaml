@@ -6,7 +6,7 @@ metadata:
     app: csr-auto-approver
   namespace: csr-auto-approver
 spec:
-  serviceAccountName: cap-service-account
+  serviceAccountName: csr-service-account
   nodeSelector:
     node-role.kubernetes.io/master: ""
   tolerations:

@@ -3,16 +3,19 @@ kind: ClusterRole
 metadata:
   annotations:
     openshift.io/description: "Cluster Role for CSR Auto Approver"
-  name: cap-auto-approver
-  namespace: csr-auto-approver
+  name: csr-auto-approver
 rules:
 - apiGroups:
-  - '*'
+    - v1
   resources:
-  - '*'
+    - Nodes
   verbs:
-  - '*'
-- nonResourceURLs:
-  - '*'
+    - get
+    - list
+- apiGroups:
+    - certificatesigningrequests.certificates.k8s.io
+    - signers.certificates.k8s.io
+  resources:
+    - '*'
   verbs:
-  - '*'
+    - '*'

@@ -5,9 +5,18 @@ metadata:
   namespace: csr-auto-approver
 data:
   nodes: |-
-    worker0.acm-managed-2.ocp.pwc.umbrella.local
-    worker1.acm-managed-2.ocp.pwc.umbrella.local
-    worker2.acm-managed-2.ocp.pwc.umbrella.local
+    cnv-node0.alice.lab.uc2.io
+    cnv-node1.alice.lab.uc2.io
+    cnv-node2.alice.lab.uc2.io
+    infra-node0.alice.lab.uc2.io
+    infra-node1.alice.lab.uc2.io
+    infra-node2.alice.lab.uc2.io
+    ocs-node0.alice.lab.uc2.io
+    ocs-node1.alice.lab.uc2.io
+    ocs-node2.alice.lab.uc2.io
+    worker0.alice.lab.uc2.io
+    worker1.alice.lab.uc2.io
+    worker2.alice.lab.uc2.io
   approver.sh: |-
     #!/bin/bash
     EXPECTED_NODES=`cat /data/nodes`
