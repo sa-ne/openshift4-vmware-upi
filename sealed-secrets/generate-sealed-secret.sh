@@ -27,4 +27,5 @@ fi
 
 source variables.sh
 
-kubeseal --cert "${PUBLICKEY}" --scope $1 < $2
+kubeseal -o yaml --cert "${PUBLICKEY}" --scope $1 < $2
+
