@@ -1,10 +1,10 @@
-# Automated Provisioning of OpenShift 4.7 on VMware
+# Automated Provisioning of OpenShift 4.9 on VMware
 
 [![GitHub Super-Linter](https://github.com/sa-ne/openshift4-vmware-upi/workflows/Lint%20Code%20Base/badge.svg)](https://github.com/marketplace/actions/super-linter)
 
 ----
 
-This repository contains a set of playbooks to help facilitate the deployment of OpenShift 4.7 on VMware.
+This repository contains a set of playbooks to help facilitate the deployment of OpenShift 4.9 on VMware.
 
 ## Changes for OpenShift 4.6+
 
@@ -28,7 +28,7 @@ This is a continuation of the [work](https://github.com/sa-ne/openshift4-rhv-upi
 
 To leverage the automation in this guide you need to bring the following:
 
-* VMware Environment (tested on ESXi/vSphere 7.0)
+* VMware Environment (tested on ESXi/vSphere 7.0.2)
 * IdM Server with DNS Enabled
   * Must have Proper Forward/Reverse Zones Configured
 * RHEL 7 Server which will act as a Web Server, Load Balancer and DHCP Server
@@ -46,11 +46,11 @@ Bootstrap, master and worker hostnames must use the following format:
 * worker1.\<base domain\>
 * workerX.\<base domain\>
 
-The HA proxy installation on the helper node will load balance ingress to worker nodes. All other node types (for instance, if you add infra nodes) that do not have 'worker' in them will be provisioned last.
+The HA proxy installation on the helper node will load balance ingress to all worker nodes.
 
 ## Installing
 
-Please read through the [Installing on vSphere](https://access.redhat.com/documentation/en-us/openshift_container_platform/4.7/html-single/installing/index#installing-vsphere) installation documentation before proceeding.
+Please read through the [Installing on vSphere](https://access.redhat.com/documentation/en-us/openshift_container_platform/4.9/html/installing/installing-on-vsphere#installer-provisioned-infrastructure-installation-of-openshift-container-platform-on-vsphere) installation documentation before proceeding.
 
 ### Clone this Repository
 
@@ -100,6 +100,7 @@ A list of available options for individual nodes is listed below:
 
 |Variable|Description|
 |:---|:---|
+|interface|Network interface name on RHCOS|
 |ip|IP Address of node|
 |gateway|Network gateway (only used with Static IP option)|
 |mask|Network mask (only used with Static IP option)|
@@ -110,7 +111,7 @@ A list of available options for individual nodes is listed below:
 |cores|Number of vCPUs|
 |datastore|Default datastore|
 |latencySensitivity|Toggle latency sensitivity option (optional)|
-|disks|List of disks (see inventory-example.yaml for examples)|
+|disks|List of disks (see inventory-example.yaml for examples).|
 |nested_virt|Boolean to expose hardware assisted virtualization instructions to node (optional)|
 
 Even if you are not defining multiple disks for each VM, this option can be used to resize the primary disk. Set `scsi_controller` and `unit_number` to 0.
@@ -135,7 +136,6 @@ vcenter_password: "changeme"
 vcenter_datacenter: "PWC"
 vcenter_cluster: "Primary"
 vcenter_datastore: "pool-nvme-vms"
-vcenter_network: "Lab Network"
 ipa_hostname: "idm1.umbrella.local"
 ipa_username: "admin"
 ipa_password: "changeme"
@@ -229,10 +229,10 @@ A small script is provided to enable automatic CSR approval for our cluster. Thi
 To enable this script, simply copy all of the yaml files in this repositories `csr-auto-approve` directory to your clusters `manifests` directory (`~/upi/vmware-upi/manifests/` in this example).
 
 ```console
-cp csr-auto-approve/cap-*.yaml ~/upi/vmware-upi/manifests/
+cp csr-auto-approve/csr-*.yaml ~/upi/vmware-upi/manifests/
 ```
 
-After the yaml files are copied, you will need to edit `cap-configmap.yaml` and adjust the nodes variable to include a list of all the *worker* nodes you want the script to automatically approve CSRs for.
+After the yaml files are copied, you will need to edit `csr-configmap.yaml` and adjust the nodes variable to include a list of all the *worker* nodes you want the script to automatically approve CSRs for.
 
 With our manifests modified to support a UPI installation, run the OpenShift installer as follows to generate your ignition configs.
 
@@ -240,7 +240,7 @@ With our manifests modified to support a UPI installation, run the OpenShift ins
 ./openshift-install create ignition-configs --dir=~/upi/vmware-upi
 ```
 
-### Deploying OpenShift 4.7 on VMware with Ansible
+### Deploying OpenShift 4.9 on VMware with Ansible
 
 To kick off the installation, simply run the provision.yaml playbook as follows:
 
@@ -262,10 +262,12 @@ The order of operations for the `provision.yaml` playbook is as follows:
 * Boot VMs
   - Start bootstrap VM and wait for SSH
   - Start master VMs and wait for SSH
-  - Start worker VMs and wait for SSH
   - Start other VMs and wait for SSH
+* Wait for Bootstrap to Complete, Remove Bootstrap Node
+* Install Sealed Secrets Controller
+* Remove CSR Auto Approver
 
-Once the playbook completes (should take several minutes) continue with the instructions.
+Once the playbook completes (should take ~40 minutes) continue with the instructions.
 
 #### Skipping Portions of Automation
 
@@ -311,24 +313,6 @@ Approve each pending CSR by hand, or approve all by running the following comman
 oc get csr -ojson | jq -r '.items[] | select(.status=={}) | .metadata.name' | xargs oc adm certificate approve
 ```
 
-#### Confirm Bootstrapping is Complete
-
-Run the following command to ensure the bootstrap process completes (be sure to adjust the `--dir` flag with your working directory). Note this command may take a few minutes to finish while it waits for the bootstrap process to complete.
-
-```console
-$ ./openshift-install --dir=~/upi/vmware-upi wait-for bootstrap-complete
-INFO Waiting up to 30m0s for the Kubernetes API at https://api.vmware-upi.ocp.pwc.umbrella.local:6443... 
-INFO API v1.13.4+f2cc675 up                       
-INFO Waiting up to 30m0s for bootstrapping to complete... 
-INFO It is now safe to remove the bootstrap resources
-```
-
-At this point, the bootstrap node can be shutdown and discarded. A playbook is provided to shutdown the bootstrap node and remove it from the various backends in our load balancer:
-
-```console
-ansible-playbook -i inventory.yaml bootstrap-cleanup.yaml
-```
-
 #### Validating Installation
 
 Even though we are finished with the playbook execution, OpenShift may still be installing various platform components. We can run the following command to wait for/validate a successful installation:
@@ -346,7 +330,7 @@ INFO Time elapsed: 0s
 
 ## Deploying Sealed Secrets Controller
 
-Many post installation tasks can be handled by Argo CD, Red Hat Advanced Cluster Manager (RHACM) or similar tools. When using a GitOps approach for declarative management, sensitive information like Secrets need to be protected. A vault is commonly used in this scenario, but using Sealed Secrets is an alternative approach that allows sensitive information to be encrypted and stored directly in git.
+Many post installation tasks can be handled by Argo CD, Red Hat Advanced Cluster Management (RHACM) or similar tools. When using a GitOps approach for declarative management, sensitive information like Secrets need to be protected. A vault is commonly used in this scenario, but using Sealed Secrets is an alternative approach that allows sensitive information to be encrypted and stored directly in git.
 
 ### sealed-secrets Role
 
@@ -716,7 +700,7 @@ oc create -f ocs/registry-cephfs-pvc.yaml
 To reconfigure the registry to use our new PVC, run the following:
 
 ```console
-oc patch configs.imageregistry.operator.openshift.io/cluster --type merge -p '{"spec":{"managementState":"Managed","storage":{"pvc":{"claim":"registry"}}}}'
+oc patch config.imageregistry.operator.openshift.io/cluster --type=merge -p '{"spec":{"managementState":"Managed","rolloutStrategy":"Recreate","replicas":1},"storage":{"pvc":{"claim":"image-registry-storage"}}}'
 ```
 
 ## Retiring
