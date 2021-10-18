@@ -1,0 +1,29 @@
+- name: Set Node Count
+  set_fact:
+    expected_node_count: "{{ (groups[provision_group] | count) - 1 }}"
+  tags:
+    - csr-auto-approve-cleanup
+
+- name: Waiting 30 Minutes for Nodes to Join Cluster
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Node
+    kubeconfig: "{{ installation_directory }}/auth/kubeconfig"
+  delay: 15
+  register: node_results
+  retries: 120
+  tags:
+    - csr-auto-approve-cleanup
+  until:
+    - node_results.resources is defined
+    - (node_results.resources | count) == (expected_node_count | int)
+
+- name: Delete Namespace
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: Namespace
+    kubeconfig: "{{ installation_directory }}/auth/kubeconfig"
+    name: "{{ csr_auto_approver_namespace }}"
+    state: absent
+  tags:
+    - csr-auto-approve-cleanup

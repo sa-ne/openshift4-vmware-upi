@@ -1,0 +1,42 @@
+- name: Wait for Bootstrap Complete
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: ConfigMap
+    kubeconfig: "{{ installation_directory }}/auth/kubeconfig"
+    name: bootstrap
+    namespace: kube-system
+  delay: 15
+  delegate_to: localhost
+  register: bootstrap_complete
+  retries: 120
+  until:
+    - bootstrap_complete.resources is defined
+    - bootstrap_complete.resources | count == 1
+    - bootstrap_complete.resources[0].data is defined
+    - bootstrap_complete.resources[0].data.status is defined
+    - bootstrap_complete.resources[0].data.status == "complete"
+
+- name: Make sure bootstrap lines are commented out
+  ansible.builtin.replace:
+    path: /etc/haproxy/haproxy.cfg
+    regexp: '(server bootstrap .*)'
+    replace: '# \1'
+
+- name: Reload haproxy service
+  ansible.builtin.service:
+    name: haproxy
+    state: reloaded
+
+- name: Delete Bootstrap VM
+  community.vmware.vmware_guest:
+    cluster: "{{ vcenter_cluster }}"
+    datacenter: "{{ vcenter_datacenter }}"
+    folder: "/{{ vcenter_datacenter }}/vm/{{ cluster_name }}"
+    force: yes
+    hostname: "{{ vcenter_hostname }}"
+    name: "bootstrap.{{ base_domain }}"
+    password: "{{ vcenter_password }}"
+    state: absent
+    username: "{{ vcenter_username }}"
+    validate_certs: no
+  delegate_to: localhost

@@ -24,6 +24,7 @@
     ipa_user: "{{ ipa_username }}"
     ipa_pass: "{{ ipa_password }}"
     state: absent
+    validate_certs: no
   with_items:
     - "{{ groups[provision_group] }}"
 
@@ -37,6 +38,7 @@
     ipa_user: "{{ ipa_username }}"
     ipa_pass: "{{ ipa_password }}"
     state: absent
+    validate_certs: no
   with_items:
     - "{{ groups[provision_group] }}"
 
@@ -50,6 +52,7 @@
     ipa_user: "{{ ipa_username }}"
     ipa_pass: "{{ ipa_password }}"
     state: absent
+    validate_certs: no
   with_items:
     - api
     - api-int
@@ -64,6 +67,7 @@
     ipa_user: "{{ ipa_username }}"
     ipa_pass: "{{ ipa_password }}"
     state: absent
+    validate_certs: no
 
 # no longer needed
 #- name: Delete etcd-x Records
