@@ -1,0 +1,11 @@
+collections:
+  - name: community.general
+    source: https://galaxy.ansible.com
+  - name: ansible.posix
+    source: https://galaxy.ansible.com
+  - name: community.kubernetes
+    source: https://galaxy.ansible.com
+  - name: community.crypto
+    source: https://galaxy.ansible.com
+  - name: community.vmware
+    source: https://galaxy.ansible.com
