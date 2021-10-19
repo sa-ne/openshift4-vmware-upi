@@ -1,41 +1,43 @@
 ---
 all:
   vars:
-    provision_group: pg
+    base_domain: alice.lab.uc2.io
     cleanup_known_hosts: True
+    cluster_name: alice
+    dhcp_server_dns_servers: 172.16.10.2
+    dhcp_server_gateway: 172.16.10.254
+    dhcp_server_subnet: 172.16.10.0
+    dhcp_server_subnet_mask: 255.255.255.0
+    installation_directory: /home/chris/upi/alice
+    ova_local_path: /tmp/rhcos-vmware.x86_64.ova
     ova_remote_path: https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/latest/latest/rhcos-vmware.x86_64.ova
     ova_remote_sha256: https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos/latest/latest/sha256sum.txt
-    ova_local_path: /tmp/rhcos-vmware.x86_64.ova
     ova_vm_name: rhcos-vmware.x86_64-alice
-    cluster_name: alice
-    base_domain: alice.ocp.pwc.umbrella.local
-    dhcp_server_dns_servers: 172.16.10.11
-    dhcp_server_gateway: 172.16.10.254
-    dhcp_server_subnet_mask: 255.255.255.0
-    dhcp_server_subnet: 172.16.10.0
+    provision_group: pg
+    sealed_secrets_keypair_name: sealed-secrets-custom-key
+    sealed_secrets_namespace: sealed-secrets
     use_static_ip: True
-    installation_directory: /home/chris/upi/alice
-    vcenter_network: Lab Network
     vcenter_datastore: pool-spinning-vms
+    # 15 (ESXi 6.7U2 and greater)
+    vcenter_hardware_version: 15
+    vcenter_network: Lab Network
   children:
     helper:
       hosts:
-        lb.alice.ocp.pwc.umbrella.local:
+        lb.alice.lab.uc2.io:
           ip: 172.16.10.172
           httpd_port: 8080
     pg:
       hosts:
         bootstrap:
+          interface: ens192
           ip: 172.16.10.131
           gateway: 172.16.10.254
           mask: 255.255.255.0
-          dns: 172.16.10.11
+          dns: 172.16.10.2
           memory: 24576
-          mem_reservation: 24576
-          cpu_reservation: 8000 # 4 x 2.00GHz * 1000hz
           cores: 4
           datastore: r420-esxi-1-nvme
-          latencySensitivity: High
           disks:
             - size_gb: 100
               type: thin
@@ -44,14 +46,17 @@ all:
               unit_number: 0
               datastore: r420-esxi-1-nvme
         master0:
+          interface: ens192
           etcd_name: etcd-0
           ip: 172.16.10.132
           gateway: 172.16.10.254
           mask: 255.255.255.0
-          dns: 172.16.10.11
+          dns: 172.16.10.2
           memory: 24576
           mem_reservation: 24576
-          cpu_reservation: 8000 # 4 x 2.00GHz * 1000hz
+          # r420-esxi-1 has 2.2 GHz/Core
+          # 2.2 GHz * 1000 MHz/GHz * 4 vCPU
+          cpu_reservation: 8800
           cores: 4
           datastore: r420-esxi-1-nvme
           latencySensitivity: High
@@ -63,14 +68,17 @@ all:
               unit_number: 0
               datastore: r420-esxi-1-nvme
         master1:
+          interface: ens192
           etcd_name: etcd-1
           ip: 172.16.10.133
           gateway: 172.16.10.254
           mask: 255.255.255.0
-          dns: 172.16.10.11
+          dns: 172.16.10.2
           memory: 24576
           mem_reservation: 24576
-          cpu_reservation: 8000 # 4 x 2.00GHz * 1000hz
+          # r420-esxi-2 has 2.0 GHz/Core
+          # 2.0 GHz * 1000 MHz/GHz * 4 vCPU
+          cpu_reservation: 8000
           cores: 4
           datastore: r420-esxi-2-nvme
           latencySensitivity: High
@@ -82,14 +90,17 @@ all:
               unit_number: 0
               datastore: r420-esxi-2-nvme
         master2:
+          interface: ens192
           etcd_name: etcd-2
           ip: 172.16.10.134
           gateway: 172.16.10.254
           mask: 255.255.255.0
-          dns: 172.16.10.11
+          dns: 172.16.10.2
           memory: 24576
           mem_reservation: 24576
-          cpu_reservation: 12280 # 4 x 3.07GHz * 1000hz
+          # r710-esxi-1 has 3.06 GHz/Core
+          # 3.06 GHz * 1000 MHz/GHz * 4 vCPU
+          cpu_reservation: 12240
           cores: 4
           datastore: r710-esxi-1-nvme
           latencySensitivity: High
@@ -101,10 +112,11 @@ all:
               unit_number: 0
               datastore: r710-esxi-1-nvme
         worker0:
+          interface: ens192
           ip: 172.16.10.135
           gateway: 172.16.10.254
           mask: 255.255.255.0
-          dns: 172.16.10.11
+          dns: 172.16.10.2
           memory: 24576
           cores: 4
           datastore: r420-esxi-1-nvme
@@ -116,10 +128,11 @@ all:
               unit_number: 0
               datastore: r420-esxi-1-nvme
         worker1:
+          interface: ens192
           ip: 172.16.10.136
           gateway: 172.16.10.254
           mask: 255.255.255.0
-          dns: 172.16.10.11
+          dns: 172.16.10.2
           memory: 24576
           cores: 4
           datastore: r420-esxi-2-nvme
@@ -131,10 +144,11 @@ all:
               unit_number: 0
               datastore: r420-esxi-2-nvme
         worker2:
+          interface: ens192
           ip: 172.16.10.137
           gateway: 172.16.10.254
           mask: 255.255.255.0
-          dns: 172.16.10.11
+          dns: 172.16.10.2
           memory: 24576
           cores: 4
           datastore: r710-esxi-1-nvme
@@ -146,11 +160,12 @@ all:
               unit_number: 0
               datastore: r710-esxi-1-nvme
         ocs-node0:
+          interface: ens192
           ip: 172.16.10.138
           gateway: 172.16.10.254
           mask: 255.255.255.0
-          dns: 172.16.10.11
-          memory: 49152
+          dns: 172.16.10.2
+          memory: 24576
           cores: 10
           datastore: r420-esxi-1-nvme
           hypervisor: r420-esxi-1.pwc.umbrella.local
@@ -167,11 +182,12 @@ all:
             scsi_controller: 0
             unit_number: 1
         ocs-node1:
+          interface: ens192
           ip: 172.16.10.139
           gateway: 172.16.10.254
           mask: 255.255.255.0
-          dns: 172.16.10.11
-          memory: 49152
+          dns: 172.16.10.2
+          memory: 24576
           cores: 10
           datastore: r420-esxi-2-nvme
           hypervisor: r420-esxi-2.pwc.umbrella.local
@@ -188,11 +204,12 @@ all:
             scsi_controller: 0
             unit_number: 1
         ocs-node2:
+          interface: ens192
           ip: 172.16.10.140
           gateway: 172.16.10.254
           mask: 255.255.255.0
-          dns: 172.16.10.11
-          memory: 49152
+          dns: 172.16.10.2
+          memory: 24576
           cores: 10
           datastore: r710-esxi-1-nvme
           hypervisor: r710-esxi-1.pwc.umbrella.local
@@ -209,12 +226,13 @@ all:
             scsi_controller: 0
             unit_number: 1
         infra-node0:
+          interface: ens192
           ip: 172.16.10.141
           gateway: 172.16.10.254
           mask: 255.255.255.0
-          dns: 172.16.10.11
-          memory: 49152
-          cores: 10
+          dns: 172.16.10.2
+          memory: 24576
+          cores: 6
           datastore: r420-esxi-1-nvme
           disks:
             - size_gb: 100
@@ -224,12 +242,13 @@ all:
               unit_number: 0
               datastore: r420-esxi-1-nvme
         infra-node1:
+          interface: ens192
           ip: 172.16.10.142
           gateway: 172.16.10.254
           mask: 255.255.255.0
-          dns: 172.16.10.11
-          memory: 49152
-          cores: 10
+          dns: 172.16.10.2
+          memory: 24576
+          cores: 6
           datastore: r420-esxi-2-nvme
           disks:
             - size_gb: 100
@@ -239,13 +258,77 @@ all:
               unit_number: 0
               datastore: r420-esxi-2-nvme
         infra-node2:
+          interface: ens192
           ip: 172.16.10.143
           gateway: 172.16.10.254
           mask: 255.255.255.0
-          dns: 172.16.10.11
-          memory: 49152
-          cores: 10
+          dns: 172.16.10.2
+          memory: 24576
+          cores: 6
           datastore: r710-esxi-1-nvme
+          disks:
+            - size_gb: 100
+              type: thin
+              state: present
+              scsi_controller: 0
+              unit_number: 0
+              datastore: r710-esxi-1-nvme
+        cnv-node0:
+          interface: ens192
+          ip: 172.16.10.144
+          gateway: 172.16.10.254
+          mask: 255.255.255.0
+          dns: 172.16.10.2
+          memory: 20480
+          cores: 4
+          datastore: r420-esxi-1-nvme
+          latencySensitivity: High
+          # 2.2 GHz * 1000 MHz/GHz * 4 vCPU
+          cpu_reservation: 8800
+          mem_reservation: 20480
+          nested_virt: True
+          disks:
+            - size_gb: 100
+              type: thin
+              state: present
+              scsi_controller: 0
+              unit_number: 0
+              datastore: r420-esxi-1-nvme
+        cnv-node1:
+          interface: ens192
+          ip: 172.16.10.145
+          gateway: 172.16.10.254
+          mask: 255.255.255.0
+          dns: 172.16.10.2
+          memory: 20480
+          cores: 4
+          datastore: r420-esxi-2-nvme
+          latencySensitivity: High
+          # 2.0 GHz * 1000 MHz/GHz * 4 vCPU
+          cpu_reservation: 8000
+          mem_reservation: 20480
+          nested_virt: True
+          disks:
+            - size_gb: 100
+              type: thin
+              state: present
+              scsi_controller: 0
+              unit_number: 0
+              datastore: r420-esxi-2-nvme
+        cnv-node2:
+          interface: ens192
+          ip: 172.16.10.146
+          gateway: 172.16.10.254
+          mask: 255.255.255.0
+          dns: 172.16.10.2
+          memory: 20480
+          cores: 4
+          datastore: r710-esxi-1-nvme
+          latencySensitivity: High
+          # 3.06 GHz * 1000 MHz/GHz * 4 vCPU
+          cpu_reservation: 12240
+          mem_reservation: 20480
+          nested_virt: True
           disks:
             - size_gb: 100
               type: thin

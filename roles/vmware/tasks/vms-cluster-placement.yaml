@@ -52,25 +52,26 @@
 
 - name: Create VMs (Cluster Placement) for {{ item }}
   vmware_guest:
-    hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_username }}"
-    password: "{{ vcenter_password }}"
-    validate_certs: no
     cluster: "{{ vcenter_cluster }}"
+    customvalues: "{{ vapp_properties }}"
     datacenter: "{{ vcenter_datacenter }}"
     datastore: "{{ hostvars[item].datastore }}"
     disk: "{{ hostvars[item].disk | default([]) | list }}"
     folder: "/{{ vcenter_datacenter }}/vm/{{ cluster_name }}"
     guest_id: rhel8_64Guest
     hardware:
-      memory_mb: "{{ hostvars[item].memory }}"
-      num_cpus: "{{ hostvars[item].cores }}"
-      num_cpu_cores_per_socket: "{{ hostvars[item].cores }}"
-      mem_reservation: "{{ hostvars[item].mem_reservation | default(0) }}"
       cpu_reservation: "{{ hostvars[item].cpu_reservation | default(0) }}"
+      memory_mb: "{{ hostvars[item].memory }}"
+      mem_reservation: "{{ hostvars[item].mem_reservation | default(0) }}"
       nested_virt: "{{ hostvars[item].nested_virt | default(False) }}"
+      num_cpu_cores_per_socket: "{{ hostvars[item].cores }}"
+      num_cpus: "{{ hostvars[item].cores }}"
+      version: "{{ vcenter_hardware_version | int }}"
+    hostname: "{{ vcenter_hostname }}"
     name: "{{ item }}.{{ base_domain }}"
+    password: "{{ vcenter_password }}"
     state: present
     template: "{{ ova_vm_name }}"
-    customvalues: "{{ vapp_properties }}"
+    username: "{{ vcenter_username }}"
+    validate_certs: no
   register: vmware_guest_results
