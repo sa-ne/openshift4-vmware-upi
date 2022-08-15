@@ -1,10 +1,10 @@
-# Automated Provisioning of OpenShift 4.9 on VMware
+# Automated Provisioning of OpenShift 4.11 on VMware
 
 [![GitHub Super-Linter](https://github.com/sa-ne/openshift4-vmware-upi/workflows/Lint%20Code%20Base/badge.svg)](https://github.com/marketplace/actions/super-linter)
 
 ----
 
-This repository contains a set of playbooks to help facilitate the deployment of OpenShift 4.9 on VMware.
+This repository contains a set of playbooks to help facilitate the deployment of OpenShift 4.11 on VMware.
 
 ## Changes for OpenShift 4.6+
 
@@ -28,7 +28,7 @@ This is a continuation of the [work](https://github.com/sa-ne/openshift4-rhv-upi
 
 To leverage the automation in this guide you need to bring the following:
 
-* VMware Environment (tested on ESXi/vSphere 7.0.2)
+* VMware Environment (tested on ESXi/vSphere 7.0.3)
 * IdM Server with DNS Enabled
   * Must have Proper Forward/Reverse Zones Configured
 * RHEL 7 Server which will act as a Web Server, Load Balancer and DHCP Server
@@ -50,7 +50,7 @@ The HA proxy installation on the helper node will load balance ingress to all wo
 
 ## Installing
 
-Please read through the [Installing on vSphere](https://access.redhat.com/documentation/en-us/openshift_container_platform/4.9/html/installing/installing-on-vsphere#installer-provisioned-infrastructure-installation-of-openshift-container-platform-on-vsphere) installation documentation before proceeding.
+Please read through the [Installing on vSphere](https://access.redhat.com/documentation/en-us/openshift_container_platform/4.11/html/installing/installing-on-vsphere#installing-vsphere) installation documentation before proceeding.
 
 ### Clone this Repository
 
@@ -143,6 +143,14 @@ sealed_secrets_keypair_crt: "OQKW0=" # base64 encoded certificate
 sealed_secrets_keypair_key: "JJL222=" # base64 encoded key
 ```
 
+### Install Ansible Collections
+
+At the root of the repository, run the following command to install required Ansible collections:
+
+```console
+ansible-galaxy collection install -r collections/requirements.yaml
+```
+
 ### Download the OpenShift Installer
 
 The OpenShift Installer releases are stored [here](https://mirror.openshift.com/pub/openshift-v4/clients/ocp/latest/). Find the installer, right click on the "Download Now" button and select copy link. Then pull the installer using curl as shown (Linux client used as example):
@@ -194,7 +202,7 @@ You will need to modify vsphere, name, baseDomain, pullSecret and sshKey (be sur
 
 Also note starting with OpenShift 4.4, the `folder` variable is now required for UPI based installations. This is not explicitly stated in the OpenShift installation instructions and a documentation bug was filed to correct that.
 
-Your pull secret can be obtained from the [OpenShift start page](https://cloud.redhat.com/openshift/install/vsphere/user-provisioned).
+Your pull secret can be obtained from the [OpenShift start page](https://console.redhat.com/openshift/install/vsphere/user-provisioned).
 
 Before we create the ignition configs we need to generate our manifests first.
 
@@ -240,7 +248,7 @@ With our manifests modified to support a UPI installation, run the OpenShift ins
 ./openshift-install create ignition-configs --dir=~/upi/vmware-upi
 ```
 
-### Deploying OpenShift 4.9 on VMware with Ansible
+### Deploying OpenShift 4.11 on VMware with Ansible
 
 To kick off the installation, simply run the provision.yaml playbook as follows:
 
