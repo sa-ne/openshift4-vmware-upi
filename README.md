@@ -240,7 +240,7 @@ To enable this script, simply copy all of the yaml files in this repositories `c
 cp csr-auto-approve/csr-*.yaml ~/upi/vmware-upi/manifests/
 ```
 
-After the yaml files are copied, you will need to edit `csr-configmap.yaml` and adjust the nodes variable to include a list of all the *worker* nodes you want the script to automatically approve CSRs for.
+After the yaml files are copied, you will need to edit `csr-configmap.yaml` and adjust the nodes variable to include a list of all the _worker_ nodes you want the script to automatically approve CSRs for.
 
 With our manifests modified to support a UPI installation, run the OpenShift installer as follows to generate your ignition configs.
 
@@ -343,7 +343,7 @@ Many post installation tasks can be handled by Argo CD, Red Hat Advanced Cluster
 ### sealed-secrets Role
 
 The role provided in this repository will deploy Bitnami's controller and other associated CRDs and resources. You can read more about sealed secrets [here](https://github.com/bitnami-labs/sealed-secrets). This documentation assumes you are already familiar wih sealed secrets. The role (`sealed-secrets`) requires you to provide your own RSA key pair for the sealed secrets controller to use.
-There are several advantages to doing this, but mainly we want to be able to create `SealedSecrets` custom resources *before* our target cluster is provisioned (ultimately to support a GitOps workflow for our cluster configuration).
+There are several advantages to doing this, but mainly we want to be able to create `SealedSecrets` custom resources _before_ our target cluster is provisioned (ultimately to support a GitOps workflow for our cluster configuration).
 
 This role is enabled by default as part of the provisioning process, however it can be omitted when running the provisioning playbook by passing `--skip-tags sealed-secrets` to the `ansible-playbook` command.
 
