@@ -6,7 +6,7 @@
     checksum: "sha256:{{ ova_remote_sha256 }}"
 
 - name: Create Cluster Folder
-  vcenter_folder:
+  community.vmware.vcenter_folder:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
@@ -17,7 +17,7 @@
     state: present
 
 - name: Upload RHCOS OVA Template
-  vmware_deploy_ovf:
+  community.vmware.vmware_deploy_ovf:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
@@ -54,14 +54,14 @@
     - hostvars[item].hypervisor is defined
 
 - name: Get VM Facts
-  vmware_guest_facts:
+  community.vmware.vmware_guest_info:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
     validate_certs: no
     datacenter: "{{ vcenter_datacenter }}"
     name: "{{ item }}.{{ base_domain }}"
-  register: vmware_guest_facts_results
+  register: vmware_guest_info_results
   with_items:
     - "{{ groups[provision_group] }}"
 
@@ -83,14 +83,14 @@
     - "{{ groups[provision_group] }}"
 
 - name: Add Disks to VMs
-  vmware_guest_disk:
+  community.vmware.vmware_guest_disk:
     datacenter: "{{ vcenter_datacenter }}"
     disk:
-      - size_gb: "{{ item.1.size_gb }}"
-        type: thin
+      - controller_number: "{{ item.1.controller_number }}"
         datastore: "{{ item.1.datastore }}"
-        scsi_controller: "{{ item.1.scsi_controller }}"
+        size_gb: "{{ item.1.size_gb }}"
         state: present
+        type: thin
         unit_number: "{{ item.1.unit_number }}"
     folder: "/{{ vcenter_datacenter }}/vm/{{ cluster_name }}"
     hostname: "{{ vcenter_hostname }}"
@@ -117,7 +117,7 @@
         ]
       }}
   with_items:
-    - "{{ vmware_guest_facts_results.results }}"
+    - "{{ vmware_guest_info_results.results }}"
 
 - name: Debug host_mac_list
   debug:

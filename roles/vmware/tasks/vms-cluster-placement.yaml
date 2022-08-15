@@ -17,7 +17,7 @@
         [
           {
             'key': 'sched.cpu.latencySensitivity',
-            'value': '{{ hostvars[item].latencySensitivity }}'
+            'value': hostvars[item].latencySensitivity
           }
         ]
       }}
@@ -51,9 +51,9 @@
     verbosity: 1
 
 - name: Create VMs (Cluster Placement) for {{ item }}
-  vmware_guest:
+  community.vmware.vmware_guest:
+    advanced_settings: "{{ vapp_properties }}"
     cluster: "{{ vcenter_cluster }}"
-    customvalues: "{{ vapp_properties }}"
     datacenter: "{{ vcenter_datacenter }}"
     datastore: "{{ hostvars[item].datastore }}"
     disk: "{{ hostvars[item].disk | default([]) | list }}"
