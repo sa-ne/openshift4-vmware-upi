@@ -389,6 +389,10 @@ The output of this command is the encrypted SealedSecret resource that can be st
 
 ## Installing vSphere CSI Drivers
 
+> 🚧 Deprecated
+>
+> OpenShift 4.11 now includes the VMware CSI drivers by default and this part of the documentation is deprecated.
+
 By default, OpenShift will create a storage class that leverages the in-tree vSphere volume plugin to handle dynamic volume provisioning. The CSI drivers promise a deeper integration with vSphere to handle dynamic volume provisioning.
 
 The source for the driver can be found [here](https://github.com/kubernetes-sigs/vsphere-csi-driver) along with [specific installation instructions](https://cloud-provider-vsphere.sigs.k8s.io/tutorials/kubernetes-on-vsphere-with-kubeadm.html). The documentation references an installation against a very basic Kubernetes cluster so extensive modification is required to make this work with OpenShift.
