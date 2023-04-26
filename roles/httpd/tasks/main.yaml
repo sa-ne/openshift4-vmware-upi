@@ -3,7 +3,7 @@
     name:
       - httpd
       - php
-      - policycoreutils-python
+      - python3-policycoreutils
     state: latest
   tags:
     - install-packages
