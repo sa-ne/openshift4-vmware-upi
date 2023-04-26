@@ -1,5 +1,5 @@
 - name: Startup (install) Bootstrap Node
-  vmware_guest:
+  community.vmware.vmware_guest:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
@@ -9,15 +9,16 @@
     name: "bootstrap.{{ base_domain }}"
     state: poweredon
 
-- name: Wait 30 Minutes for SSH on Bootstrap Node
-  wait_for:
+- name: Wait 45 Minutes for SSH on Bootstrap Node
+  ansible.builtin.wait_for:
+    connect_timeout: 20
     host: "{{ hostvars['bootstrap'].ip }}"
     port: 22
     sleep: 10
-    timeout: 1800
+    timeout: 2700
 
 - name: Startup (install) All Other Nodes
-  vmware_guest:
+  community.vmware.vmware_guest:
     hostname: "{{ vcenter_hostname }}"
     username: "{{ vcenter_username }}"
     password: "{{ vcenter_password }}"
@@ -30,12 +31,13 @@
     - "{{ groups[provision_group] }}"
   when: item is not search("bootstrap")
 
-- name: Wait 30 Minutes for SSH on All Other Nodes
-  wait_for:
+- name: Wait 45 Minutes for SSH on All Other Nodes
+  ansible.builtin.wait_for:
+    connect_timeout: 20
     host: "{{ hostvars[item].ip }}"
     port: 22
     sleep: 10
-    timeout: 1800
+    timeout: 2700
   with_items:
     - "{{ groups[provision_group] }}"
   when: item is not search("bootstrap")

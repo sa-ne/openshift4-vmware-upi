@@ -33,7 +33,7 @@
   roles:
     - role: vmware-retire
       tags:
-        - rhv
+        - vmware
     - role: ipa-retire
       tags:
         - ipa
