@@ -89,16 +89,20 @@ backend backend_6443
     mode tcp
     option tcplog
     option log-health-checks
-    option redispatch
+    option httpchk
+    http-check connect ssl alpn h2
+    http-check send meth GET uri /readyz
+    http-check expect status 200-399
+    http-check expect string ok
     log global
     balance roundrobin
     timeout connect 10s
-    timeout server 1m
+    timeout server 30s
     # Remove the bootstrap server after ./openshift-install wait-for bootstrap-complete
-    server bootstrap {{ hostvars['bootstrap'].ip }}:6443 check
+    server bootstrap {{ hostvars['bootstrap'].ip }}:6443 check inter 10s fall 3 rise 2 check-ssl verify none
 {% for item in groups[provision_group] %}
 {% if 'master' in item %}
-    server {{ item }} {{ hostvars[item].ip }}:6443 check
+    server {{ item }} {{ hostvars[item].ip }}:6443 check inter 10s fall 3 rise 2 check-ssl verify none
 {% endif %}
 {% endfor %}
 

@@ -2,8 +2,8 @@
   yum:
     name:
       - haproxy
-      - libselinux-python
-      - libsemanage-python
+      - python3-libsemanage
+      - python3-libselinux
     state: latest
   tags:
     - install-packages
