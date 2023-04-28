@@ -110,16 +110,19 @@ backend backend_22623
     mode tcp
     option tcplog
     option log-health-checks
-    option redispatch
+    option httpchk
+    http-check connect ssl
+    http-check send meth GET uri /healthz
+    http-check expect status 200-399
     log global
     balance roundrobin
     timeout connect 10s
-    timeout server 1m
+    timeout server 30s
     # Remove the bootstrap server after ./openshift-install wait-for bootstrap-complete
     server bootstrap {{ hostvars['bootstrap'].ip }}:22623 check
 {% for item in groups[provision_group] %}
 {% if 'master' in item %}
-    server {{ item }} {{ hostvars[item].ip }}:22623 check
+    server {{ item }} {{ hostvars[item].ip }}:22623 check inter 10s fall 3 rise 2 check-ssl verify none
 {% endif %}
 {% endfor %}
 
@@ -127,14 +130,18 @@ backend backend_443
     mode tcp
     option tcplog
     option log-health-checks
-    option redispatch
+    option httpchk
+    http-check connect
+    http-check send meth GET uri /healthz
+    http-check expect status 200-399
+    http-check expect string ok
     log global
     balance roundrobin
     timeout connect 10s
-    timeout server 1m
+    timeout server 30s
 {% for item in groups[provision_group] %}
 {% if 'master' not in item and 'bootstrap' not in item %}
-    server {{ item }} {{ hostvars[item].ip }}:443 check
+    server {{ item }} {{ hostvars[item].ip }}:443 check port 1936 inter 5s fall 2 rise 2
 {% endif %}
 {% endfor %}
 {% if groups[provision_group] | count == 4 %}
