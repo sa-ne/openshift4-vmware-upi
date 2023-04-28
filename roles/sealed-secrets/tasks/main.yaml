@@ -1,7 +1,9 @@
 - name: Deploy Sealed Secrets for Kubernetes
-  k8s:
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'templates/sealed-secrets.j2') }}"
     kubeconfig: "{{ installation_directory }}/auth/kubeconfig"
     state: present
-    definition: "{{ lookup('template', 'templates/sealed-secrets.j2') }}"
+  delay: 10
+  retries: 10
   tags:
     - sealed-secrets
