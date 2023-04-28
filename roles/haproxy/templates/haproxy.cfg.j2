@@ -119,7 +119,7 @@ backend backend_22623
     timeout connect 10s
     timeout server 30s
     # Remove the bootstrap server after ./openshift-install wait-for bootstrap-complete
-    server bootstrap {{ hostvars['bootstrap'].ip }}:22623 check
+    server bootstrap {{ hostvars['bootstrap'].ip }}:22623 check inter 10s fall 3 rise 2 check-ssl verify none
 {% for item in groups[provision_group] %}
 {% if 'master' in item %}
     server {{ item }} {{ hostvars[item].ip }}:22623 check inter 10s fall 3 rise 2 check-ssl verify none
