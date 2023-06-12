@@ -58,6 +58,17 @@
   vars_files:
     - vault.yaml
   tasks:
+    - name: Wait 10 Minutes for API
+      ansible.builtin.uri:
+        method: GET
+        url: "https://api.{{ base_domain }}:6443/readyz"
+        validate_certs: false
+      delay: 10
+      register: api_results
+      retries: 60
+      until:
+        - api_results.status == 200
+
     - name: Deploy Sealed Secrets Controller
       ansible.builtin.include_role:
         name: sealed-secrets
@@ -69,3 +80,25 @@
         name: csr-auto-approve-cleanup
       tags:
         - csr-auto-approve-cleanup
+
+- name: Wait 30 Minutes for Cluster Operator Deployment
+  gather_facts: no
+  hosts: localhost
+  tasks:
+    - name: Wait for Cluster Version Operator
+      kubernetes.core.k8s_info:
+        api_version: config.openshift.io/v1
+        kind: ClusterVersion
+        kubeconfig: "{{ installation_directory }}/auth/kubeconfig"
+        name: version
+      delay: 15
+      register: cluster_version_results
+      retries: 120
+      tags:
+        - wait_for_cluster_operators
+      until:
+        - (cluster_version_results.resources[0] | community.general.json_query(query_available) | first | bool) is true
+        - (cluster_version_results.resources[0] | community.general.json_query(query_progressing) | first | bool) is false
+      vars:
+        query_available: "status.conditions[?type=='Available'].status"
+        query_progressing: "status.conditions[?type=='Progressing'].status"
