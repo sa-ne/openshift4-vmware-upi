@@ -1,106 +1,59 @@
 - name: Generate IPA Session Cookie
-  uri:
+  ansible.builtin.uri:
+    body: "user={{ ipa_username }}&password={{ ipa_password }}"
+    headers:
+      Accept: "text/plain"
+      Content-Type: "application/x-www-form-urlencoded"
+      Referer: "https://{{ ipa_hostname }}/ipa"
+    method: POST
+    status_code: 200
     url: "https://{{ ipa_hostname }}/ipa/session/login_password"
     validate_certs: no
-    method: POST
-    status_code: 200
-    headers:
-      Content-Type: "application/x-www-form-urlencoded"
-      Accept: "text/plain"
-      Referer: "https://{{ ipa_hostname }}/ipa"
-    body: "user={{ ipa_username }}&password={{ ipa_password }}"
   register: ipa_session
 
-- name: Debug ipa_session
-  debug:
-    var: ipa_session
-    verbosity: 2
-
-# no longer needed
-#- name: Create SRV Records
-#  uri:
-#    url: "https://{{ ipa_hostname }}/ipa/session/json"
-#    validate_certs: no
-#    method: POST
-#    status_code: 200
-#    headers:
-#      Cookie: "{{ ipa_session.set_cookie }}"
-#      Accept: "application/json"
-#      Referer: "https://{{ ipa_hostname }}/ipa"
-#    body:
-#      method: dnsrecord_add
-#      params:
-#      - - "{{ base_domain }}."
-#        - _etcd-server-ssl._tcp
-#      - srv_part_priority: '0'
-#        srv_part_weight: '10'
-#        srv_part_port: '2380'
-#        srv_part_target: "{{ item }}.{{ base_domain }}."
-#    body_format: json
-#  with_items:
-#    - "etcd-0"
-#    - "etcd-1"
-#    - "etcd-2"
-
 - name: Create A/PTR Records
-  uri:
-    url: "https://{{ ipa_hostname }}/ipa/session/json"
-    validate_certs: no
-    method: POST
-    status_code: 200
-    headers:
-      Cookie: "{{ ipa_session.set_cookie }}"
-      Accept: "application/json"
-      Referer: "https://{{ ipa_hostname }}/ipa"
+  ansible.builtin.uri:
     body:
       method: dnsrecord_add
       params:
       - - "{{ base_domain }}."
         - "{{ item }}"
-      - a_part_ip_address: "{{ hostvars[item].ip }}"
-        a_extra_create_reverse: true
+      - a_extra_create_reverse: true
+        a_part_ip_address: "{{ hostvars[item].ip }}"
     body_format: json
-  with_items:
-    - "{{ groups[provision_group] }}"
+    headers:
+      Accept: "application/json"
+      Cookie: "{{ ipa_session.set_cookie }}"
+      Referer: "https://{{ ipa_hostname }}/ipa"
+    method: POST
+    status_code: 200
+    url: "https://{{ ipa_hostname }}/ipa/session/json"
+    validate_certs: yes
+  loop: "{{ groups[provision_group] }}"
 
 - name: Create api/api-int Records
-  ipa_dnsrecord:
+  community.general.ipa_dnsrecord:
+    ipa_host: "{{ ipa_hostname }}"
+    ipa_pass: "{{ ipa_password }}"
+    ipa_user: "{{ ipa_username }}"
     name: "{{ item }}"
-    zone_name: "{{ base_domain }}"
     record_type: A
     record_value: "{{ hostvars[groups['helper'][0]].ip }}"
-    ipa_host: "{{ ipa_hostname }}"
-    ipa_user: "{{ ipa_username }}"
-    ipa_pass: "{{ ipa_password }}"
     state: present
     validate_certs: no
-  with_items:
+    zone_name: "{{ base_domain }}"
+  loop:
     - api
     - api-int
 
 - name: Create Wildcard for Applications
-  ipa_dnsrecord:
+  community.general.ipa_dnsrecord:
+    ipa_host: "{{ ipa_hostname }}"
+    ipa_pass: "{{ ipa_password }}"
+    ipa_user: "{{ ipa_username }}"
     name: "*.apps"
-    zone_name: "{{ base_domain }}"
     record_type: A
     record_value: "{{ hostvars[groups['helper'][0]].ip }}"
-    ipa_host: "{{ ipa_hostname }}"
-    ipa_user: "{{ ipa_username }}"
-    ipa_pass: "{{ ipa_password }}"
     state: present
     validate_certs: no
-
-# no longer needed
-#- name: Create etcd-x Records
-#  ipa_dnsrecord:
-#    name: "{{ hostvars[item].etcd_name }}"
-#    zone_name: "{{ base_domain }}"
-#    record_type: A
-#    record_value: "{{ hostvars[item].ip }}"
-#    ipa_host: "{{ ipa_hostname }}"
-#    ipa_user: "{{ ipa_username }}"
-#    ipa_pass: "{{ ipa_password }}"
-#    state: present
-#  with_items:
-#    - "{{ groups[provision_group] }}"
-#  when: item is search("master")
+    zone_name: "{{ base_domain }}"
