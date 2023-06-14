@@ -8,7 +8,7 @@
     method: POST
     status_code: 200
     url: "https://{{ ipa_hostname }}/ipa/session/login_password"
-    validate_certs: no
+    validate_certs: "{{ validate_certs }}"
   register: ipa_session
 
 - name: Create A/PTR Records
@@ -28,7 +28,7 @@
     method: POST
     status_code: 200
     url: "https://{{ ipa_hostname }}/ipa/session/json"
-    validate_certs: yes
+    validate_certs: "{{ validate_certs }}"
   loop: "{{ groups[provision_group] }}"
 
 - name: Create api/api-int Records
@@ -40,7 +40,7 @@
     record_type: A
     record_value: "{{ hostvars[groups['helper'][0]].ip }}"
     state: present
-    validate_certs: no
+    validate_certs: "{{ validate_certs }}"
     zone_name: "{{ base_domain }}"
   loop:
     - api
@@ -55,5 +55,5 @@
     record_type: A
     record_value: "{{ hostvars[groups['helper'][0]].ip }}"
     state: present
-    validate_certs: no
+    validate_certs: "{{ validate_certs }}"
     zone_name: "{{ base_domain }}"
