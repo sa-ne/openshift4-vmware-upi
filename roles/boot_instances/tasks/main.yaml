@@ -7,7 +7,7 @@
     password: "{{ vcenter_password }}"
     state: poweredon
     username: "{{ vcenter_username }}"
-    validate_certs: no
+    validate_certs: "{{ validate_certs }}"
   loop: "{{ groups[provision_group] }}"
   when:
     - hostvars[item].node_type in _node_scope

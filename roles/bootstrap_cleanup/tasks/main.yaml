@@ -32,11 +32,11 @@
     cluster: "{{ vcenter_cluster }}"
     datacenter: "{{ vcenter_datacenter }}"
     folder: "/{{ vcenter_datacenter }}/vm/{{ cluster_name }}"
-    force: yes
+    force: true
     hostname: "{{ vcenter_hostname }}"
     name: "bootstrap.{{ base_domain }}"
     password: "{{ vcenter_password }}"
     state: absent
     username: "{{ vcenter_username }}"
-    validate_certs: no
+    validate_certs: "{{ validate_certs }}"
   delegate_to: localhost

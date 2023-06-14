@@ -1,5 +1,5 @@
 - name: Set Node Count
-  set_fact:
+  ansible.builtin.set_fact:
     expected_node_count: "{{ (groups[provision_group] | count) - 1 }}"
   tags:
     - csr-auto-approve-cleanup

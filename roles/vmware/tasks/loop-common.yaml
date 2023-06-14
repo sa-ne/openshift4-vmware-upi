@@ -35,7 +35,13 @@
 
 - name: Define IP String for {{ item }}
   ansible.builtin.set_fact:
-    ip_string: "ip={{ hostvars[item].ip }}::{{ hostvars[item].gateway }}:{{ hostvars[item].mask }}::{{ hostvars[item].interface | default('') }}:none nameserver={{ hostvars[item].dns }}"
+    ip_string: "ip={{ _ip }}::{{ _gateway }}:{{ _mask }}::{{ _interface }}:none nameserver={{ _dns }}"
+  vars:
+    _dns: "{{ hostvars[item].dns }}"
+    _gateway: "{{ hostvars[item].gateway }}"
+    _interface: "{{ hostvars[item].interface | default('') }}"
+    _ip: "{{ hostvars[item].ip }}"
+    _mask: "{{ hostvars[item].mask }}"
   when:
     - use_static_ip
 

@@ -1,12 +1,15 @@
 ---
 - name: Cleanup Local known_hosts File
-  gather_facts: no
+  gather_facts: false
   hosts: localhost
   vars:
     # Fixes selinux issue w/ virtualenv
     ansible_python_interpreter: "/usr/bin/python"
   tasks:
     - name: Clean up ~/.ssh/known_hosts
+      when:
+        - cleanup_known_hosts is defined
+        - cleanup_known_hosts
       block:
         - name: Remove Lines w/ Inventory Hostname in known_hosts
           ansible.builtin.lineinfile:
@@ -14,26 +17,23 @@
             regexp: "^.*{{ item }}.{{ base_domain }}.*$"
             state: absent
           loop: "{{ groups[provision_group] }}"
-    
+
         - name: Remove Lines w/ Inventory IP in known_hosts
           ansible.builtin.lineinfile:
             dest: ~/.ssh/known_hosts
             regexp: "^.*{{ lookup('dig', item) }}.*$"
             state: absent
           loop: "{{ groups[provision_group] }}"
-      when:
-        - cleanup_known_hosts is defined
-        - cleanup_known_hosts
 
 - name: Retire Integrated VMs in Bulk
-  gather_facts: no
+  gather_facts: false
   hosts: localhost
   vars_files:
     - vault.yaml
   roles:
-    - role: vmware-retire
+    - role: vmware_retire
       tags:
         - vmware
-    - role: ipa-retire
+    - role: ipa_retire
       tags:
         - ipa

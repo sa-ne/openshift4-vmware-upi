@@ -16,10 +16,10 @@
     body:
       method: dnsrecord_add
       params:
-      - - "{{ base_domain }}."
-        - "{{ item }}"
-      - a_extra_create_reverse: true
-        a_part_ip_address: "{{ hostvars[item].ip }}"
+        - - "{{ base_domain }}."
+          - "{{ item }}"
+        - a_extra_create_reverse: true
+          a_part_ip_address: "{{ hostvars[item].ip }}"
     body_format: json
     headers:
       Accept: "application/json"

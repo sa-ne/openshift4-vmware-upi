@@ -1,65 +1,69 @@
 - name: Install Packages
-  yum:
+  ansible.builtin.yum:
     name:
       - httpd
       - php
       - python3-policycoreutils
-    state: latest
+    state: present
   tags:
     - install-packages
 
 - name: Allow httpd to listen on TCP port {{ httpd_port }}
-  seport:
+  community.general.seport:
     ports: "{{ httpd_port }}"
     proto: tcp
     setype: http_port_t
     state: present
 
 - name: Copy httpd.conf Template
-  template:
-    src: templates/httpd.conf.j2
+  ansible.builtin.template:
     dest: /etc/httpd/conf/httpd.conf
-    owner: root
     group: root
-    mode: 0644
+    mode: "0644"
+    owner: root
     setype: httpd_config_t
+    src: templates/httpd.conf.j2
 
 - name: Copy Ignition PHP Script
-  copy:
-    src: files/ignition-downloader.php
+  ansible.builtin.copy:
     dest: /var/www/html/ignition-downloader.php
-    owner: root
     group: root
-    mode: 0644
+    mode: "0644"
+    owner: root
     setype: httpd_sys_content_t
+    src: files/ignition-downloader.php
 
-- name: Copy ignition files
-  copy:
-    src: "{{ installation_directory }}/{{ item }}"
+- name: Copy Ignition Files
+  ansible.builtin.copy:
     dest: /var/www/html/
-    owner: root
     group: root
-    mode: 0644
+    mode: "0644"
+    owner: root
     setype: httpd_sys_content_t
+    src: "{{ installation_directory }}/{{ item }}"
   loop:
     - bootstrap.ign
     - master.ign
     - worker.ign
 
 - name: Restore SELinux Contexts in Document Root
-  shell: restorecon -R /var/www/html
+  ansible.builtin.command:
+    cmd: restorecon -R /var/www/html
+  changed_when:
+    - restorecon_results.stdout | length > 0
+  register: restorecon_results
 
 - name: Enable httpd port in firewall
-  firewalld:
+  ansible.posix.firewalld:
+    immediate: true
+    permanent: true
     port: "{{ httpd_port }}/tcp"
     state: enabled
-    permanent: yes
-    immediate: yes
   tags:
     - firewalld
 
 - name: Enable/Start httpd Service
-  systemd:
+  ansible.builtin.systemd:
+    enabled: true
     name: httpd
     state: started
-    enabled: yes

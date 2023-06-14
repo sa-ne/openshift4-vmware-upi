@@ -1,13 +1,13 @@
 - name: Install firewalld Package
-  yum:
+  ansible.builtin.yum:
     name:
       - firewalld
-    state: latest
+    state: present
   tags:
     - install-packages
 
 - name: Enable/Start firewalld Service
-  systemd:
+  ansible.builtin.systemd:
+    enabled: true
     name: firewalld
     state: started
-    enabled: yes

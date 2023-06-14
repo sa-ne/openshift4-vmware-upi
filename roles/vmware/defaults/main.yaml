@@ -6,3 +6,4 @@ node_type_ignition_map:
     node_type: control-plane
   - ignition_file: worker.ign
     node_type: compute
+validate_certs: true

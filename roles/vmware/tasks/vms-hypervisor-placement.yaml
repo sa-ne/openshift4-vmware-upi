@@ -26,5 +26,5 @@
     state: present
     template: "{{ ova_vm_name }}"
     username: "{{ vcenter_username }}"
-    validate_certs: no
+    validate_certs: "{{ validate_certs }}"
   register: vmware_guest_results

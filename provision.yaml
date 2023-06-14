@@ -1,24 +1,19 @@
 ---
 - name: Configure DNS via IdM
-  gather_facts: no
+  gather_facts: false
   hosts: localhost
   vars_files:
-    - vault.yaml
+    vault.yaml
   roles:
     - role: ipa
       tags:
         - ipa
 
 - name: Configure Load Balancer Host
-  become: yes
-  gather_facts: no
+  become: true
+  gather_facts: false
   hosts: helper
   roles:
-    # - role: dhcpd
-    #   when:
-    #     - not use_static_ip
-    #   tags:
-    #     - dhcpd
     - role: firewalld
       tags:
         - firewalld
@@ -30,16 +25,18 @@
         - httpd
 
 - name: Initialize VMware and Deploy Cluster Nodes
-  gather_facts: no
+  gather_facts: false
   hosts: localhost
   vars_files:
-    - vault.yaml
+    vault.yaml
+  roles:
+    - role: vmware_init
   tasks:
-    - name: Create Folder and Upload RHCOS OVA
-      ansible.builtin.import_role:
-        name: vmware-init
-
     - name: Deploy Bootstrap/Control Plane Nodes
+      vars:
+        - _node_scope:
+            - bootstrap
+            - control-plane
       block:
         - name: Create Bootstrap/Control Plane VMs
           ansible.builtin.import_role:
@@ -47,13 +44,12 @@
 
         - name: Start Bootstrap/Control Plane VMs
           ansible.builtin.import_role:
-            name: boot-instances
-      vars:
-        - _node_scope:
-            - bootstrap
-            - control-plane
+            name: boot_instances
 
     - name: Deploy Compute Nodes
+      vars:
+        - _node_scope:
+            - compute
       block:
         - name: Create Compute VMs
           ansible.builtin.import_role:
@@ -61,27 +57,24 @@
 
         - name: Start Compute VMs
           ansible.builtin.import_role:
-            name: boot-instances
-      vars:
-        - _node_scope:
-            - compute
+            name: boot_instances
 
 - name: Destroy Bootstrap Node and Remove from HAProxy
-  become: yes
-  gather_facts: no
+  become: true
+  gather_facts: false
   hosts: helper
   vars_files:
-  - vault.yaml
+    vault.yaml
   roles:
-    - name: bootstrap-cleanup
+    - name: bootstrap_cleanup
       tags:
         - bootstrap-cleanup
 
 - name: Post Cluster Configuration
-  gather_facts: no
+  gather_facts: false
   hosts: localhost
   vars_files:
-    - vault.yaml
+    vault.yaml
   tasks:
     - name: Wait 10 Minutes for API
       ansible.builtin.uri:
@@ -96,13 +89,13 @@
 
     - name: Deploy Sealed Secrets Controller
       ansible.builtin.include_role:
-        name: sealed-secrets
+        name: sealed_secrets
       tags:
         - sealed-secrets
 
     - name: Stop CSR Auto Approver
       ansible.builtin.include_role:
-        name: csr-auto-approve-cleanup
+        name: csr_auto_approve_cleanup
       tags:
         - csr-auto-approve-cleanup
 

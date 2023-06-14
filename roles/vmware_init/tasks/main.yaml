@@ -14,11 +14,11 @@
     password: "{{ vcenter_password }}"
     state: present
     username: "{{ vcenter_username }}"
-    validate_certs: no
+    validate_certs: "{{ validate_certs }}"
 
 - name: Upload RHCOS OVA Template
   community.vmware.vmware_deploy_ovf:
-    allow_duplicates: no
+    allow_duplicates: false
     cluster: "{{ vcenter_cluster }}"
     datacenter: "{{ vcenter_datacenter }}"
     datastore: "{{ vcenter_datastore }}"
@@ -29,8 +29,8 @@
     networks: "{u'VM Network':u'{{ vcenter_network }}'}"
     ova: "{{ ova_local_path }}"
     password: "{{ vcenter_password }}"
-    power_on: no
+    power_on: false
     username: "{{ vcenter_username }}"
-    validate_certs: no
+    validate_certs: "{{ validate_certs }}"
   tags:
     - upload-ova

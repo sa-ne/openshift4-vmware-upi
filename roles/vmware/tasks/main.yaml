@@ -1,12 +1,12 @@
 - name: Create VMs (Cluster Placement)
-  include_tasks: vms-cluster-placement.yaml
+  ansible.builtin.include_tasks: vms-cluster-placement.yaml
   loop: "{{ groups[provision_group] }}"
   when:
     - hostvars[item].node_type in _node_scope
     - hostvars[item].hypervisor is not defined
 
 - name: Create VMs (Hypervisor Placement)
-  include_tasks: vms-hypervisor-placement.yaml
+  ansible.builtin.include_tasks: vms-hypervisor-placement.yaml
   loop: "{{ groups[provision_group] }}"
   when:
     - hostvars[item].node_type in _node_scope
@@ -14,12 +14,12 @@
 
 - name: Get VM Facts
   community.vmware.vmware_guest_info:
-    hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_username }}"
-    password: "{{ vcenter_password }}"
-    validate_certs: no
     datacenter: "{{ vcenter_datacenter }}"
+    hostname: "{{ vcenter_hostname }}"
     name: "{{ item }}.{{ base_domain }}"
+    password: "{{ vcenter_password }}"
+    username: "{{ vcenter_username }}"
+    validate_certs: "{{ validate_certs }}"
   loop: "{{ groups[provision_group] }}"
   register: vmware_guest_info_results
   when:
@@ -60,11 +60,11 @@
     name: "{{ item.0.name }}.{{ base_domain }}"
     password: "{{ vcenter_password }}"
     username: "{{ vcenter_username }}"
-    validate_certs: no
+    validate_certs: "{{ validate_certs }}"
   with_subelements:
     - "{{ disk_name_dict }}"
     - disks
-    - skip_missing: False
+    - skip_missing: false
 
 # - name: Combine Hostname/IP/MAC into Dictionary for Easy Lookup
 #   set_fact:
