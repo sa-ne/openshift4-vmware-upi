@@ -1,85 +1,52 @@
-# no longer needed
-#- name: Delete SRV Record
-#  ipa_dnsrecord:
-#    name: "_etcd-server-ssl._tcp"
-#    zone_name: "{{ base_domain }}"
-#    record_type: SRV
-#    record_value: "0 10 2380 {{ item }}.{{ base_domain }}."
-#    ipa_host: "{{ ipa_hostname }}"
-#    ipa_user: "{{ ipa_username }}"
-#    ipa_pass: "{{ ipa_password }}"
-#    state: absent
-#  with_items:
-#    - etcd-0
-#    - etcd-1
-#    - etcd-2
-    
 - name: Delete A Records
-  ipa_dnsrecord:
+  community.general.ipa_dnsrecord:
+    ipa_host: "{{ ipa_hostname }}"
+    ipa_pass: "{{ ipa_password }}"
+    ipa_user: "{{ ipa_username }}"
     name: "{{ item }}"
-    zone_name: "{{ base_domain }}"
     record_type: A
     record_value: "{{ hostvars[item].ip }}"
-    ipa_host: "{{ ipa_hostname }}"
-    ipa_user: "{{ ipa_username }}"
-    ipa_pass: "{{ ipa_password }}"
     state: absent
-    validate_certs: no
-  with_items:
-    - "{{ groups[provision_group] }}"
+    validate_certs: "{{ validate_certs }}"
+    zone_name: "{{ base_domain }}"
+  loop: "{{ groups[provision_group] }}"
 
 - name: Delete PTR Records
-  ipa_dnsrecord:
+  community.general.ipa_dnsrecord:
+    ipa_host: "{{ ipa_hostname }}"
+    ipa_pass: "{{ ipa_password }}"
+    ipa_user: "{{ ipa_username }}"
     name: "{{ hostvars[item].ip.split('.')[-1] }}"
-    zone_name: "{{ hostvars[item].ip.split('.')[-2] }}.{{ hostvars[item].ip.split('.')[-3] }}.{{ hostvars[item].ip.split('.')[-4] }}.in-addr.arpa."
     record_type: PTR
     record_value: "{{ item }}.{{ base_domain }}."
-    ipa_host: "{{ ipa_hostname }}"
-    ipa_user: "{{ ipa_username }}"
-    ipa_pass: "{{ ipa_password }}"
     state: absent
-    validate_certs: no
-  with_items:
-    - "{{ groups[provision_group] }}"
+    validate_certs: "{{ validate_certs }}"
+    zone_name: "{{ hostvars[item].ip.split('.')[-2] }}.{{ hostvars[item].ip.split('.')[-3] }}.{{ hostvars[item].ip.split('.')[-4] }}.in-addr.arpa."
+  loop: "{{ groups[provision_group] }}"
 
 - name: Delete api/api-int Records
-  ipa_dnsrecord:
+  community.general.ipa_dnsrecord:
+    ipa_host: "{{ ipa_hostname }}"
+    ipa_pass: "{{ ipa_password }}"
+    ipa_user: "{{ ipa_username }}"
     name: "{{ item }}"
-    zone_name: "{{ base_domain }}"
     record_type: A
     record_value: "{{ hostvars[groups['helper'][0]].ip }}"
-    ipa_host: "{{ ipa_hostname }}"
-    ipa_user: "{{ ipa_username }}"
-    ipa_pass: "{{ ipa_password }}"
     state: absent
-    validate_certs: no
+    validate_certs: "{{ validate_certs }}"
+    zone_name: "{{ base_domain }}"
   with_items:
     - api
     - api-int
 
 - name: Delete Wildcard for Applications
-  ipa_dnsrecord:
+  community.general.ipa_dnsrecord:
+    ipa_host: "{{ ipa_hostname }}"
+    ipa_pass: "{{ ipa_password }}"
+    ipa_user: "{{ ipa_username }}"
     name: "*.apps"
-    zone_name: "{{ base_domain }}"
     record_type: A
     record_value: "{{ hostvars[groups['helper'][0]].ip }}"
-    ipa_host: "{{ ipa_hostname }}"
-    ipa_user: "{{ ipa_username }}"
-    ipa_pass: "{{ ipa_password }}"
     state: absent
-    validate_certs: no
-
-# no longer needed
-#- name: Delete etcd-x Records
-#  ipa_dnsrecord:
-#    name: "{{ hostvars[item].etcd_name }}"
-#    zone_name: "{{ base_domain }}"
-#    record_type: A
-#    record_value: "{{ hostvars[item].ip }}"
-#    ipa_host: "{{ ipa_hostname }}"
-#    ipa_user: "{{ ipa_username }}"
-#    ipa_pass: "{{ ipa_password }}"
-#    state: absent
-#  with_items:
-#    - "{{ groups[provision_group] }}"
-#  when: item is search("master")
+    validate_certs: "{{ validate_certs }}"
+    zone_name: "{{ base_domain }}"
