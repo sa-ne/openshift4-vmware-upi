@@ -1,0 +1,8 @@
+---
+node_type_ignition_map:
+  - ignition_file: bootstrap.ign
+    node_type: bootstrap
+  - ignition_file: master.ign
+    node_type: control-plane
+  - ignition_file: worker.ign
+    node_type: compute

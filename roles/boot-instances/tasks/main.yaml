@@ -1,43 +1,24 @@
-- name: Startup (install) Bootstrap Node
+- name: Start VMs in Node Scope
   community.vmware.vmware_guest:
-    hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_username }}"
-    password: "{{ vcenter_password }}"
-    validate_certs: no
     cluster: "{{ vcenter_cluster }}"
     datacenter: "{{ vcenter_datacenter }}"
-    name: "bootstrap.{{ base_domain }}"
-    state: poweredon
-
-- name: Wait 45 Minutes for SSH on Bootstrap Node
-  ansible.builtin.wait_for:
-    connect_timeout: 20
-    host: "{{ hostvars['bootstrap'].ip }}"
-    port: 22
-    sleep: 10
-    timeout: 2700
-
-- name: Startup (install) All Other Nodes
-  community.vmware.vmware_guest:
     hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_username }}"
-    password: "{{ vcenter_password }}"
-    validate_certs: no
-    cluster: "{{ vcenter_cluster }}"
-    datacenter: "{{ vcenter_datacenter }}"
     name: "{{ item }}.{{ base_domain }}"
+    password: "{{ vcenter_password }}"
     state: poweredon
-  with_items:
-    - "{{ groups[provision_group] }}"
-  when: item is not search("bootstrap")
+    username: "{{ vcenter_username }}"
+    validate_certs: no
+  loop: "{{ groups[provision_group] }}"
+  when:
+    - hostvars[item].node_type in _node_scope
 
-- name: Wait 45 Minutes for SSH on All Other Nodes
+- name: Wait 30 Minutes for SSH
   ansible.builtin.wait_for:
     connect_timeout: 20
     host: "{{ hostvars[item].ip }}"
     port: 22
     sleep: 10
-    timeout: 2700
-  with_items:
-    - "{{ groups[provision_group] }}"
-  when: item is not search("bootstrap")
+    timeout: 1800
+  loop: "{{ groups[provision_group] }}"
+  when:
+    - hostvars[item].node_type in _node_scope

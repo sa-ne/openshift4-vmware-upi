@@ -1,5 +1,6 @@
 ---
-- name: Setup DNS and Create RHCOS VMs on VMware
+- name: Configure DNS via IdM
+  gather_facts: no
   hosts: localhost
   vars_files:
     - vault.yaml
@@ -7,20 +8,17 @@
     - role: ipa
       tags:
         - ipa
-    - role: vmware
-      tags:
-        - vmware
 
-- name: Setup Load Balancer Host
+- name: Configure Load Balancer Host
   become: yes
   gather_facts: no
   hosts: helper
   roles:
-    - role: dhcpd
-      when:
-        - not use_static_ip
-      tags:
-        - dhcpd
+    # - role: dhcpd
+    #   when:
+    #     - not use_static_ip
+    #   tags:
+    #     - dhcpd
     - role: firewalld
       tags:
         - firewalld
@@ -31,17 +29,44 @@
       tags:
         - httpd
 
-- name: Boot Red Hat CoreOS Nodes
+- name: Initialize VMware and Deploy Cluster Nodes
   gather_facts: no
   hosts: localhost
   vars_files:
     - vault.yaml
-  roles:
-   - role: boot-instances
-     tags:
-        - boot-instances
+  tasks:
+    - name: Create Folder and Upload RHCOS OVA
+      ansible.builtin.import_role:
+        name: vmware-init
 
-- name: Destroy Bootstrap
+    - name: Deploy Bootstrap/Control Plane Nodes
+      block:
+        - name: Create Bootstrap/Control Plane VMs
+          ansible.builtin.import_role:
+            name: vmware
+
+        - name: Start Bootstrap/Control Plane VMs
+          ansible.builtin.import_role:
+            name: boot-instances
+      vars:
+        - _node_scope:
+            - bootstrap
+            - control-plane
+
+    - name: Deploy Compute Nodes
+      block:
+        - name: Create Compute VMs
+          ansible.builtin.import_role:
+            name: vmware
+
+        - name: Start Compute VMs
+          ansible.builtin.import_role:
+            name: boot-instances
+      vars:
+        - _node_scope:
+            - compute
+
+- name: Destroy Bootstrap Node and Remove from HAProxy
   become: yes
   gather_facts: no
   hosts: helper
@@ -81,11 +106,7 @@
       tags:
         - csr-auto-approve-cleanup
 
-- name: Wait 30 Minutes for Cluster Operator Deployment
-  gather_facts: no
-  hosts: localhost
-  tasks:
-    - name: Wait for Cluster Version Operator
+    - name: Wait for Cluster Operators
       kubernetes.core.k8s_info:
         api_version: config.openshift.io/v1
         kind: ClusterVersion
@@ -97,8 +118,8 @@
       tags:
         - wait_for_cluster_operators
       until:
-        - (cluster_version_results.resources[0] | community.general.json_query(query_available) | first | bool) is true
-        - (cluster_version_results.resources[0] | community.general.json_query(query_progressing) | first | bool) is false
+        - (cluster_version_results.resources[0] | community.general.json_query(_query_available) | first | bool) is true
+        - (cluster_version_results.resources[0] | community.general.json_query(_query_progressing) | first | bool) is false
       vars:
-        query_available: "status.conditions[?type=='Available'].status"
-        query_progressing: "status.conditions[?type=='Progressing'].status"
+        _query_available: "status.conditions[?type=='Available'].status"
+        _query_progressing: "status.conditions[?type=='Progressing'].status"

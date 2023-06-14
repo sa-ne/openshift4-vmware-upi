@@ -1,0 +1,60 @@
+---
+- name: Debug Ignition Mapping for {{ item }}
+  ansible.builtin.debug:
+    msg: "Chose ignition file {{ _ignition_file }} for node type {{ hostvars[item].node_type }}"
+  vars:
+    _ignition_file: >-
+      {{
+        ((node_type_ignition_map | selectattr('node_type', 'equalto', hostvars[item].node_type | default('compute'))) | first).ignition_file
+      }}
+
+- name: Setup vApp Properties for {{ item }}
+  ansible.builtin.set_fact:
+    vapp_properties:
+      - key: "disk.EnableUUID"
+        value: "TRUE"
+      - key: "guestinfo.ignition.config.data"
+        value: "{{ lookup('template', 'templates/append-bootstrap.j2') | to_json | b64encode }}"
+      - key: "guestinfo.ignition.config.data.encoding"
+        value: base64
+
+- name: Set Latency Sensitivity to High for {{ item }}
+  ansible.builtin.set_fact:
+    vapp_properties: >-
+      {{
+        vapp_properties +
+        [
+          {
+            'key': 'sched.cpu.latencySensitivity',
+            'value': hostvars[item].latencySensitivity
+          }
+        ]
+      }}
+  when:
+    - hostvars[item].latencySensitivity is defined
+
+- name: Define IP String for {{ item }}
+  ansible.builtin.set_fact:
+    ip_string: "ip={{ hostvars[item].ip }}::{{ hostvars[item].gateway }}:{{ hostvars[item].mask }}::{{ hostvars[item].interface | default('') }}:none nameserver={{ hostvars[item].dns }}"
+  when:
+    - use_static_ip
+
+- name: Append Static IP Options for {{ item }}
+  ansible.builtin.set_fact:
+    vapp_properties: >-
+      {{
+        vapp_properties +
+        [
+          {
+            'key': 'guestinfo.afterburn.initrd.network-kargs',
+            'value': ip_string
+          }
+        ]
+      }}
+  when:
+    - use_static_ip
+
+- name: Debug vapp_properties for {{ item }}
+  ansible.builtin.debug:
+    var: vapp_properties
+    verbosity: 1

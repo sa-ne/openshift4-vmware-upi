@@ -3,7 +3,7 @@
     "config": {
       "merge": [
         {
-          "source": "http://{{ groups['helper'][0] }}:8080/ignition-downloader.php"
+          "source": "http://{{ groups['helper'][0] }}:8080/{{ ((node_type_ignition_map | selectattr('node_type', 'equalto', hostvars[item].node_type | default('compute'))) | first).ignition_file }}"
         }
       ]
     },

@@ -1,0 +1,36 @@
+- name: Download RHCOS OVA
+  ansible.builtin.get_url:
+    checksum: "sha256:{{ ova_remote_sha256 }}"
+    dest: "{{ ova_local_path }}"
+    mode: "0444"
+    url: "{{ ova_remote_path }}"
+
+- name: Create Cluster Folder
+  community.vmware.vcenter_folder:
+    datacenter_name: "{{ vcenter_datacenter }}"
+    folder_name: "{{ cluster_name }}"
+    folder_type: vm
+    hostname: "{{ vcenter_hostname }}"
+    password: "{{ vcenter_password }}"
+    state: present
+    username: "{{ vcenter_username }}"
+    validate_certs: no
+
+- name: Upload RHCOS OVA Template
+  community.vmware.vmware_deploy_ovf:
+    allow_duplicates: no
+    cluster: "{{ vcenter_cluster }}"
+    datacenter: "{{ vcenter_datacenter }}"
+    datastore: "{{ vcenter_datastore }}"
+    disk_provisioning: thin
+    folder: "/{{ vcenter_datacenter }}/vm/{{ cluster_name }}"
+    hostname: "{{ vcenter_hostname }}"
+    name: "{{ ova_vm_name }}"
+    networks: "{u'VM Network':u'{{ vcenter_network }}'}"
+    ova: "{{ ova_local_path }}"
+    password: "{{ vcenter_password }}"
+    power_on: no
+    username: "{{ vcenter_username }}"
+    validate_certs: no
+  tags:
+    - upload-ova

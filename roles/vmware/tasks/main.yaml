@@ -1,56 +1,15 @@
-- name: Download RHCOS OVA
-  get_url:
-    url: "{{ ova_remote_path }}"
-    dest: "{{ ova_local_path }}"
-    mode: "0444"
-    checksum: "sha256:{{ ova_remote_sha256 }}"
-
-- name: Create Cluster Folder
-  community.vmware.vcenter_folder:
-    hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_username }}"
-    password: "{{ vcenter_password }}"
-    validate_certs: no
-    datacenter_name: "{{ vcenter_datacenter }}"
-    folder_name: "{{ cluster_name }}"
-    folder_type: vm
-    state: present
-
-- name: Upload RHCOS OVA Template
-  community.vmware.vmware_deploy_ovf:
-    hostname: "{{ vcenter_hostname }}"
-    username: "{{ vcenter_username }}"
-    password: "{{ vcenter_password }}"
-    validate_certs: no
-    datacenter: "{{ vcenter_datacenter }}"
-    cluster: "{{ vcenter_cluster }}"
-    datastore: "{{ vcenter_datastore }}"
-    folder: "/{{ vcenter_datacenter }}/vm/{{ cluster_name }}"
-    allow_duplicates: no
-    disk_provisioning: thin
-    name: "{{ ova_vm_name }}"
-    networks: "{u'VM Network':u'{{ vcenter_network }}'}"
-    ova: "{{ ova_local_path }}"
-    power_on: no
-  tags:
-    - upload-ova
-
-- name: Debug Append Bootstrap Ignition File
-  debug:
-    msg: "{{ lookup('template', 'templates/append-bootstrap.j2') | to_json | b64encode }}"
-
 - name: Create VMs (Cluster Placement)
   include_tasks: vms-cluster-placement.yaml
-  with_items:
-    - "{{ groups[provision_group] }}"
+  loop: "{{ groups[provision_group] }}"
   when:
+    - hostvars[item].node_type in _node_scope
     - hostvars[item].hypervisor is not defined
 
 - name: Create VMs (Hypervisor Placement)
   include_tasks: vms-hypervisor-placement.yaml
-  with_items:
-    - "{{ groups[provision_group] }}"
+  loop: "{{ groups[provision_group] }}"
   when:
+    - hostvars[item].node_type in _node_scope
     - hostvars[item].hypervisor is defined
 
 - name: Get VM Facts
@@ -61,15 +20,20 @@
     validate_certs: no
     datacenter: "{{ vcenter_datacenter }}"
     name: "{{ item }}.{{ base_domain }}"
+  loop: "{{ groups[provision_group] }}"
   register: vmware_guest_info_results
-  with_items:
-    - "{{ groups[provision_group] }}"
+  when:
+    - hostvars[item].node_type in _node_scope
+
+- name: Reset disk_name_dict (Support Iterative Role Execution)
+  ansible.builtin.set_fact:
+    disk_name_dict: []
 
 - name: Combine Applicable Disks & Hostnames into Dictionary for Easy Lookup
-  set_fact:
+  ansible.builtin.set_fact:
     disk_name_dict: >-
       {{
-        disk_name_dict | default([]) +
+        disk_name_dict +
         [
           {
             'name': item,
@@ -77,10 +41,9 @@
           }
         ]
       }}
-  tags:
-    - disks
-  with_items:
-    - "{{ groups[provision_group] }}"
+  loop: "{{ groups[provision_group] }}"
+  when:
+    - hostvars[item].node_type in _node_scope
 
 - name: Add Disks to VMs
   community.vmware.vmware_guest_disk:
@@ -103,22 +66,24 @@
     - disks
     - skip_missing: False
 
-- name: Combine Hostname/IP/MAC into Dictionary for Easy Lookup
-  set_fact:
-    host_mac_list: >-
-      {{
-        host_mac_list | default([]) +
-        [
-          {
-            'name': item.item,
-            'mac': item.instance.hw_eth0.macaddress,
-            'ip': hostvars[item.item]['ip']
-          }
-        ]
-      }}
-  with_items:
-    - "{{ vmware_guest_info_results.results }}"
+# - name: Combine Hostname/IP/MAC into Dictionary for Easy Lookup
+#   set_fact:
+#     host_mac_list: >-
+#       {{
+#         host_mac_list | default([]) +
+#         [
+#           {
+#             'name': item.item,
+#             'mac': item.instance.hw_eth0.macaddress,
+#             'ip': hostvars[item.item]['ip']
+#           }
+#         ]
+#       }}
+#   with_items:
+#     - "{{ vmware_guest_info_results.results }}"
+#   when:
+#     - hostvars[item.item].node_type in _node_scope
 
-- name: Debug host_mac_list
-  debug:
-    var: host_mac_list
+# - name: Debug host_mac_list
+#   debug:
+#     var: host_mac_list
