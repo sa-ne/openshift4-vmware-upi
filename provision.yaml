@@ -111,6 +111,7 @@
       tags:
         - wait_for_cluster_operators
       until:
+        - cluster_version_results.resources is defined
         - (cluster_version_results.resources[0] | community.general.json_query(_query_available) | first | bool) is true
         - (cluster_version_results.resources[0] | community.general.json_query(_query_progressing) | first | bool) is false
       vars:
