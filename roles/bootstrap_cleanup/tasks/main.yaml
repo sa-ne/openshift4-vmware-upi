@@ -5,6 +5,7 @@
     kubeconfig: "{{ installation_directory }}/auth/kubeconfig"
     name: bootstrap
     namespace: kube-system
+  become: false
   delay: 15
   delegate_to: localhost
   register: bootstrap_complete
@@ -39,4 +40,5 @@
     state: absent
     username: "{{ vcenter_username }}"
     validate_certs: "{{ validate_certs }}"
+  become: false
   delegate_to: localhost
