@@ -1,14 +1,10 @@
-# Automated Provisioning of OpenShift 4.11 on VMware
+# Automated Provisioning of OpenShift 4 on VMware
 
 [![GitHub Super-Linter](https://github.com/sa-ne/openshift4-vmware-upi/workflows/Lint%20Code%20Base/badge.svg)](https://github.com/marketplace/actions/super-linter)
 
 ----
 
-This repository contains a set of playbooks to help facilitate the deployment of OpenShift 4.11 on VMware.
-
-## Changes for OpenShift 4.6+
-
-Please note this installer will not work with previous versions of OpenShift without some modifications to the append bootstrap configuration. This change is required because OpenShift 4.6+ now uses Ignition spec v3 (previous versions of OpenShift used v2). More details on the change can be found in the [release notes](https://access.redhat.com/documentation/en-us/openshift_container_platform/4.6/html-single/release_notes/index#ocp-4-6-rhcos).
+This repository contains a set of playbooks to help facilitate the deployment of OpenShift 4 on VMware.
 
 ## Background
 
@@ -23,16 +19,18 @@ This is a continuation of the [work](https://github.com/sa-ne/openshift4-rhv-upi
 * Uploading RHCOS OVA template
 * Deployment and configuration of RHCOS VMs on VMware
 * Ordered starting of VMs
+* Wait for Cluster Operators to complete
 
 ## Requirements
 
 To leverage the automation in this guide you need to bring the following:
 
-* VMware Environment (tested on ESXi/vSphere 7.0.3)
+* VMware Environment (tested on ESXi/vSphere 8.0.2)
 * IdM Server with DNS Enabled
   * Must have Proper Forward/Reverse Zones Configured
-* RHEL 7 Server which will act as a Web Server, Load Balancer and DHCP Server
-  * Only Repository Requirement is `rhel-7-server-rpms`
+* RHEL 9 Server which will act as a Web Server, Load Balancer and DHCP Server
+  * Only Repository Requirement are `rhel-9-for-x86_64-appstream-rpms` and `rhel-9-for-x86_64-baseos-rpms`
+* Tested with OpenShift 4.14
 
 ## Naming Convention
 
@@ -50,7 +48,7 @@ The HA proxy installation on the helper node will load balance ingress to all wo
 
 ## Installing
 
-Please read through the [Installing on vSphere](https://access.redhat.com/documentation/en-us/openshift_container_platform/4.11/html/installing/installing-on-vsphere#installing-vsphere) installation documentation before proceeding.
+Please read through the [Installing on vSphere](https://access.redhat.com/documentation/en-us/openshift_container_platform/4.14/html/installing/installing-on-vsphere#doc-wrapper) installation documentation before proceeding.
 
 ### Clone this Repository
 
@@ -62,7 +60,7 @@ git clone https://github.com/sa-ne/openshift4-vmware-upi.git
 
 ### Create DNS Zones in IdM
 
-Login to your IdM server and make sure a reverse zone is configured for your subnet. My lab has a subnet of `172.16.10.0` so the corresponding reverse zone is called `10.16.172.in-addr.arpa.`. Make sure a forward zone is configured as well. It should be whatever is defined in the `<cluster_name>`.`<base_domain>` variables in your Ansible inventory file (`vmware-upi.ocp.pwc.umbrella.local` in this example).
+Login to your IdM server and make sure a reverse zone is configured for your subnet. My lab has a subnet of `172.16.10.0` so the corresponding reverse zone is called `10.16.172.in-addr.arpa.`. Make sure a forward zone is configured as well. It should be whatever is defined in the `<cluster_name>`.`<base_domain>` variables in your Ansible inventory file (`alice.lab.uc2.io` in this example).
 
 ### Creating Inventory File for Ansible
 
@@ -79,7 +77,7 @@ The following global variables will need to be modified (the default values are 
 |ova\_local\_path|Local path to the RHCOS OVA template|
 |ova\_vm\_name|Name of the virtual machine that is created when uploading the OVA|
 |base\_domain|The base DNS domain. Not to be confused with the base domain in the UPI instructions. Our base\_domain variable in this case is `<cluster_name>`.`<base_domain>`|
-|cluster\_name|The name of our cluster (`vmware-upi` in the example)|
+|cluster\_name|The name of our cluster (`alice` in the example)|
 |dhcp\_server\_dns\_servers|DNS server assigned by DHCP server|
 |dhcp\_server\_gateway|Gateway assigned by DHCP server|
 |dhcp\_server\_subnet\_mask|Subnet mask assigned by DHCP server|
@@ -130,7 +128,7 @@ The vault requires the following variables. Adjust the values to suit your envir
 
 ```yaml
 ---
-vcenter_hostname: "vsphere.pwc.umbrella.local"
+vcenter_hostname: "vsphere.lab.uc2.io"
 vcenter_username: "administrator@vsphere.local"
 vcenter_password: "changeme"
 vcenter_datacenter: "PWC"
@@ -168,37 +166,58 @@ After you download the installer we need to create our ignition configs using th
 
 ```yaml
 apiVersion: v1
-baseDomain: ocp.pwc.umbrella.local
+baseDomain: lab.uc2.io
 compute:
-- hyperthreading: Enabled
+- architecture: amd64
+  hyperthreading: Enabled
   name: worker
   replicas: 0
 controlPlane:
+  architecture: amd64
   hyperthreading: Enabled
   name: master
   replicas: 3
 metadata:
-  name: vmware-upi
+  name: alice
 networking:
+  clusterNetwork:
+  - cidr: 10.128.0.0/14
+    hostPrefix: 23
   clusterNetworks:
   - cidr: 10.128.0.0/14
     hostPrefix: 23
-  networkType: OpenShiftSDN
+  machineNetwork:
+  - cidr: 10.0.0.0/16
+  networkType: OVNKubernetes
   serviceNetwork:
   - 172.30.0.0/16
 platform:
   vsphere:
-    vcenter: vsphere.pwc.umbrella.local
-    username: administrator@vsphere.local
-    password: changeme
-    datacenter: PWC
-    defaultDatastore: pool-nvme-vms
-    folder: /PWC/vms/vmware-upi
+    failureDomains:
+    - name: generated-failure-domain
+      region: generated-region
+      server: vsphere.lab.uc2.io
+      topology:
+        computeCluster: /UC2/host/r440s
+        datacenter: UC2
+        datastore: /UC2/datastore/pool-spinning-z2-1
+        folder: /UC2/vm/alice
+        networks:
+        - Lab Network
+        resourcePool: /UC2/host/r440s/Resources
+      zone: generated-zone
+    vcenters:
+    - datacenters:
+      - UC2
+      password: changeme
+      port: 443
+      server: vsphere.lab.uc2.io
+      user: administrator@vsphere.local
 pullSecret: '{ ... }'
 sshKey: 'ssh-rsa ... user@host'
 ```
 
-You will need to modify vsphere, name, baseDomain, pullSecret and sshKey (be sure to use your _public_ key) with the appropriate values. Next, copy `install-config.yaml` into your working directory (`~/upi/vmware-upi` in this example).
+You will need to modify `platform.vsphere`, `metadata.name`, `baseDomain`, `pullSecret` and `sshKey` (be sure to use your _public_ key) with the appropriate values. Next, copy `install-config.yaml` into your working directory (`~/upi/alice` in this example).
 
 Also note starting with OpenShift 4.4, the `folder` variable is now required for UPI based installations. This is not explicitly stated in the OpenShift installation instructions and a documentation bug was filed to correct that.
 
@@ -207,25 +226,25 @@ Your pull secret can be obtained from the [OpenShift start page](https://console
 Before we create the ignition configs we need to generate our manifests first.
 
 ```console
-./openshift-install create manifests --dir=~/upi/vmware-upi
+./openshift-install create manifests --dir=~/upi/alice
 ```
 
 Since we specified 0 worker nodes in the install-config.yaml file, the masters become schedulable. We want to prevent that, so run the following sed command to disable:
 
 ```console
-sed -i 's/mastersSchedulable: true/mastersSchedulable: false/' ~/upi/vmware-upi/manifests/cluster-scheduler-02-config.yml
+sed -i 's/mastersSchedulable: true/mastersSchedulable: false/' ~/upi/alice/manifests/cluster-scheduler-02-config.yml
 ```
 
 Next, we want to disable the manifests that define the control plane machines:
 
 ```console
-rm -f ~/upi/vmware-upi/openshift/99_openshift-cluster-api_master-machines-*.yaml
+rm -f ~/upi/alice/openshift/99_openshift-cluster-api_master-machines-*.yaml
 ```
 
 Last we want to disable the manifests that define the worker nodes:
 
 ```console
-rm -f ~/upi/vmware-upi/openshift/99_openshift-cluster-api_worker-machineset-*.yaml
+rm -f ~/upi/alice/openshift/99_openshift-cluster-api_worker-machineset-*.yaml
 ```
 
 #### Adding CSR Auto Approver
@@ -234,10 +253,10 @@ When you add a node to OpenShift, two CSRs will need to be approved before the n
 
 A small script is provided to enable automatic CSR approval for our cluster. This script is injected into a container at run time using a ConfigMap along with a list of nodes. The script will only approve CSRs for nodes in the list. Doing a blanket approval of all CSRs is not recommended as it could present a security risk.
 
-To enable this script, simply copy all of the yaml files in this repositories `csr-auto-approve` directory to your clusters `manifests` directory (`~/upi/vmware-upi/manifests/` in this example).
+To enable this script, simply copy all of the yaml files in this repositories `csr-auto-approve` directory to your clusters `manifests` directory (`~/upi/alice/manifests/` in this example).
 
 ```console
-cp csr-auto-approve/csr-*.yaml ~/upi/vmware-upi/manifests/
+cp csr-auto-approve/csr-*.yaml ~/upi/alice/manifests/
 ```
 
 After the yaml files are copied, you will need to edit `csr-configmap.yaml` and adjust the nodes variable to include a list of all the _worker_ nodes you want the script to automatically approve CSRs for.
@@ -245,10 +264,10 @@ After the yaml files are copied, you will need to edit `csr-configmap.yaml` and 
 With our manifests modified to support a UPI installation, run the OpenShift installer as follows to generate your ignition configs.
 
 ```console
-./openshift-install create ignition-configs --dir=~/upi/vmware-upi
+./openshift-install create ignition-configs --dir=~/upi/alice
 ```
 
-### Deploying OpenShift 4.11 on VMware with Ansible
+### Deploying OpenShift 4 on VMware with Ansible
 
 To kick off the installation, simply run the provision.yaml playbook as follows:
 
@@ -306,7 +325,7 @@ As noted earlier, two CSRs will need to be approved for each node before a node 
 Set your `KUBECONFIG` environment variable to the kubeconfig file generated in your installation directory, for example:
 
 ```console
-export KUBECONFIG=~/upi/vmware-upi/auth/kubeconfig
+export KUBECONFIG=~/upi/alice/auth/kubeconfig
 ```
 
 Run the following to check for pending CSRs:
@@ -319,21 +338,6 @@ Approve each pending CSR by hand, or approve all by running the following comman
 
 ```console
 oc get csr -ojson | jq -r '.items[] | select(.status=={}) | .metadata.name' | xargs oc adm certificate approve
-```
-
-#### Validating Installation
-
-Even though we are finished with the playbook execution, OpenShift may still be installing various platform components. We can run the following command to wait for/validate a successful installation:
-
-```console
-$ openshift-install wait-for install-complete
-INFO Waiting up to 30m0s for the cluster at https://api.vmware-upi.ocp.pwc.umbrella.local:6443 to initialize... 
-INFO Waiting up to 10m0s for the openshift-console route to be created... 
-INFO Install complete!                            
-INFO To access the cluster as the system:admin user when using 'oc', run 'export KUBECONFIG=/home/chris/upi/vmware-upi/auth/kubeconfig' 
-INFO Access the OpenShift web-console here: https://console-openshift-console.apps.vmware-upi.ocp.pwc.umbrella.local 
-INFO Login to the console with user: "kubeadmin", and password: "s3cr3t" 
-INFO Time elapsed: 0s
 ```
 
 ## Deploying Sealed Secrets Controller
@@ -391,7 +395,7 @@ The output of this command is the encrypted SealedSecret resource that can be st
 
 > 🚧 Deprecated
 >
-> OpenShift 4.11 now includes the VMware CSI drivers by default and this part of the documentation is deprecated.
+> OpenShift 4.11+ now includes the VMware CSI drivers by default and this part of the documentation is deprecated.
 
 By default, OpenShift will create a storage class that leverages the in-tree vSphere volume plugin to handle dynamic volume provisioning. The CSI drivers promise a deeper integration with vSphere to handle dynamic volume provisioning.
 
@@ -416,7 +420,7 @@ oc new-project vsphere
 All worker nodes are required to have the `node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule` taint. This will be removed automatically once the vSphere CPI is installed.
 
 ```console
-oc adm taint node workerX.vmware-upi.ocp.pwc.umbrella.local node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule
+oc adm taint node workerX.alice.lab.uc2.io node.cloudprovider.kubernetes.io/uninitialized=true:NoSchedule
 ```
 
 #### Create a CPI ConfigMap
@@ -561,8 +565,8 @@ We can also validate the appropriate CRDs by running:
 ```console
 $ oc get csinode
 NAME                                        CREATED AT
-worker0.vmware-upi.ocp.pwc.umbrella.local   2020-01-29T16:18:02Z
-worker1.vmware-upi.ocp.pwc.umbrella.local   2020-01-29T16:18:03Z
+worker0.alice.lab.uc2.io   2020-01-29T16:18:02Z
+worker1.alice.lab.uc2.io   2020-01-29T16:18:03Z
 ```
 
 Also verify the driver has been properly assigned on each CSINode:
@@ -570,9 +574,9 @@ Also verify the driver has been properly assigned on each CSINode:
 ```console
 $ oc get csinode -ojson | jq '.items[].spec.drivers[] | .name, .nodeID'
 "csi.vsphere.vmware.com"
-"worker0.vmware-upi.ocp.pwc.umbrella.local"
+"worker0.alice.lab.uc2.io"
 "csi.vsphere.vmware.com"
-"worker1.vmware-upi.ocp.pwc.umbrella.local"
+"worker1.alice.lab.uc2.io"
 ```
 
 ### Creating a Storage Class
@@ -648,7 +652,7 @@ vsphere-csi   csi.vsphere.vmware.com   40m
 Before we begin an installation, we need to label our OCS nodes with the label `cluster.ocs.openshift.io/openshift-storage`. Label each node with the following command:
 
 ```console
-oc label node workerX.vmware-upi.ocp.pwc.umbrella.local cluster.ocs.openshift.io/openshift-storage=''
+oc label node workerX.alice.lab.uc2.io cluster.ocs.openshift.io/openshift-storage=''
 ```
 
 ### Deploying the OCS Operator
