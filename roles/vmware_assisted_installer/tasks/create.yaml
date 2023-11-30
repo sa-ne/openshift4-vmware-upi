@@ -1,0 +1,96 @@
+- name: Create Folder for Cluster {{ cluster_name }}
+  community.vmware.vcenter_folder:
+    datacenter_name: "{{ vcenter_datacenter }}"
+    folder_name: "{{ cluster_name }}"
+    folder_type: vm
+    hostname: "{{ vcenter_hostname }}"
+    password: "{{ vcenter_password }}"
+    state: present
+    username: "{{ vcenter_username }}"
+    validate_certs: "{{ validate_certs }}"
+
+- name: Create VMs
+  community.vmware.vmware_guest:
+    advanced_settings:
+      - key: "disk.EnableUUID"
+        value: "TRUE"
+    cluster: "{{ vcenter_cluster }}"
+    datacenter: "{{ vcenter_datacenter }}"
+    datastore: "{{ hostvars[item].datastore }}"
+    disk: "{{ hostvars[item].disk | default([]) | list }}"
+    folder: "/{{ vcenter_datacenter }}/vm/{{ cluster_name }}"
+    guest_id: rhel9_64Guest
+    hardware:
+      boot_firmware: efi
+      cpu_reservation: "{{ hostvars[item].cpu_reservation | default(0) }}"
+      memory_mb: "{{ hostvars[item].memory }}"
+      mem_reservation: "{{ hostvars[item].mem_reservation | default(0) }}"
+      nested_virt: "{{ hostvars[item].nested_virt | default(False) }}"
+      num_cpu_cores_per_socket: "{{ hostvars[item].cores }}"
+      num_cpus: "{{ hostvars[item].cores }}"
+      version: "{{ vcenter_hardware_version | int }}"
+    hostname: "{{ vcenter_hostname }}"
+    name: "{{ item }}.{{ base_domain }}"
+    networks:
+      - name: "{{ vcenter_network }}"
+        device_type: vmxnet3
+    password: "{{ vcenter_password }}"
+    state: present
+    username: "{{ vcenter_username }}"
+    validate_certs: "{{ validate_certs }}"
+  loop: "{{ groups[provision_group] }}"
+  register: vmware_guest_results
+
+- name: Combine Applicable MACs & IPs into Dictionary for Easy Lookup
+  vars:
+    _query: "results[?instance.hw_name==`{{ item }}.{{ base_domain }}`].instance.hw_eth0.macaddress"
+  ansible.builtin.set_fact:
+    mac_ip_dict: >-
+      {{
+        mac_ip_dict | default([]) +
+        [
+          {
+            'dns': hostvars[item].dns,
+            'gateway': hostvars[item].gateway,
+            'ip': hostvars[item].ip,
+            'mac': vmware_guest_results | json_query(_query) | first,
+            'name': item
+          }
+        ]
+      }}
+  loop: "{{ groups[provision_group] }}"
+
+- name: Combine Applicable Disks & Hostnames into Dictionary for Easy Lookup
+  ansible.builtin.set_fact:
+    disk_name_dict: >-
+      {{
+        disk_name_dict | default([]) +
+        [
+          {
+            'name': item,
+            'disks': hostvars[item].disks | default([])
+          }
+        ]
+      }}
+  loop: "{{ groups[provision_group] }}"
+
+- name: Add Disks to VMs
+  community.vmware.vmware_guest_disk:
+    datacenter: "{{ vcenter_datacenter }}"
+    disk:
+      - controller_number: "{{ item.1.controller_number }}"
+        datastore: "{{ item.1.datastore }}"
+        size_gb: "{{ item.1.size_gb }}"
+        state: present
+        type: "{{ item.1.type }}"
+        unit_number: "{{ item.1.unit_number }}"
+    folder: "/{{ vcenter_datacenter }}/vm/{{ cluster_name }}"
+    hostname: "{{ vcenter_hostname }}"
+    name: "{{ item.0.name }}.{{ base_domain }}"
+    password: "{{ vcenter_password }}"
+    username: "{{ vcenter_username }}"
+    validate_certs: "{{ validate_certs }}"
+  with_subelements:
+    - "{{ disk_name_dict }}"
+    - disks
+    - skip_missing: false

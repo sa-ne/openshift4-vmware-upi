@@ -1,0 +1,59 @@
+- name: Initialize VMware and Deploy Cluster Nodes
+  gather_facts: false
+  hosts: localhost
+  vars_files:
+    vault.yaml
+  tasks:
+    - name: Clean up ~/.ssh/known_hosts
+      when:
+        - cleanup_known_hosts is defined
+        - cleanup_known_hosts
+      block:
+        - name: Remove Lines w/ Inventory Hostname in known_hosts
+          ansible.builtin.lineinfile:
+            dest: ~/.ssh/known_hosts
+            regexp: "^.*{{ item }}.{{ base_domain }}.*$"
+            state: absent
+          loop: "{{ groups[provision_group] }}"
+
+        - name: Remove Lines w/ Inventory IP in known_hosts
+          ansible.builtin.lineinfile:
+            dest: ~/.ssh/known_hosts
+            regexp: "^.*{{ lookup('dig', item) }}.*$"
+            state: absent
+          loop: "{{ groups[provision_group] }}"
+
+    - name: Lookup infra-env-id
+      ansible.builtin.set_fact:
+        infra_env_id: "{{ lookup('ansible.builtin.file', artifact_directory + '/infra-env-id') }}"
+
+    - name: Delete ISO From Download Path
+      ansible.builtin.file:
+        path: "{{ discovery_iso_download_path }}/{{ cluster_name }}-{{ infra_env_id }}-{{ discovery_iso_type }}.iso"
+        state: absent
+
+    - name: Delete Cluster from Red Hat Cloud Console
+      vars:
+        _assisted_installer_action: delete
+      ansible.builtin.import_role:
+        name: assisted_installer
+      tags:
+        - assisted-api
+
+    - name: Retire VMs
+      ansible.builtin.import_role:
+        name: vmware_retire
+      tags:
+        - vmware
+
+    - name: Delete ISO From Datastore
+      community.vmware.vsphere_file:
+        datacenter: "{{ vcenter_datacenter }}"
+        datastore: "{{ discovery_iso_datastore }}"
+        hostname: "{{ vcenter_hostname }}"
+        password: "{{ vcenter_password }}"
+        path: "{{ cluster_name }}-{{ infra_env_id }}-{{ discovery_iso_type }}.iso"
+        username: "{{ vcenter_username }}"
+        validate_certs: "{{ validate_certs }}"
+      tags:
+        - vmware

@@ -1,0 +1,65 @@
+- name: Initialize VMware and Deploy Cluster
+  gather_facts: false
+  hosts: localhost
+  vars_files:
+    vault.yaml
+  tasks:
+    - name: Create VMs
+      vars:
+        _vmware_assisted_installer_action: create
+      ansible.builtin.include_role:
+        name: vmware_assisted_installer
+
+    - name: Create Cluster via Assisted API
+      vars:
+        _assisted_installer_action: create
+      ansible.builtin.include_role:
+        name: assisted_installer
+
+    - name: Reconfigure and Boot VMs
+      vars:
+        _vmware_assisted_installer_action: boot
+      ansible.builtin.include_role:
+        name: vmware_assisted_installer
+
+    - name: Wait for Hosts
+      vars:
+        _assisted_installer_action: host-wait
+      ansible.builtin.include_role:
+        name: assisted_installer
+
+    - name: Assign Host Roles
+      vars:
+        _assisted_installer_action: host-role
+      ansible.builtin.include_role:
+        name: assisted_installer
+
+    - name: Setup Storage
+      vars:
+        _assisted_installer_action: storage
+      ansible.builtin.include_role:
+        name: assisted_installer
+
+    - name: Setup Networking
+      vars:
+        _assisted_installer_action: network
+      ansible.builtin.include_role:
+        name: assisted_installer
+
+    - name: Start Installation
+      vars:
+        _assisted_installer_action: install
+      ansible.builtin.include_role:
+        name: assisted_installer
+
+    - name: Wait for Install
+      vars:
+        _assisted_installer_action: install-wait
+      ansible.builtin.include_role:
+        name: assisted_installer
+
+    - name: Save Credentials
+      vars:
+        _assisted_installer_action: credentials
+      ansible.builtin.include_role:
+        name: assisted_installer

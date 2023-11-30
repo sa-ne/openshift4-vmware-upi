@@ -1,0 +1,47 @@
+- name: Query Clusters
+  ansible.builtin.uri:
+    headers:
+      Authorization: "Bearer {{ access_token.json.access_token }}"
+    method: GET
+    status_code: 200
+    url: "{{ api_clusters_url }}"
+  register: api_query_results
+
+- name: Set Expected Host Count
+  ansible.builtin.set_fact:
+    _inventory_host_count: "{{ groups[provision_group] | count }}"
+
+- name: Query Hosts
+  ansible.builtin.uri:
+    headers:
+      Authorization: "Bearer {{ access_token.json.access_token }}"
+    method: GET
+    status_code: 200
+    url: "{{ api_infra_envs_url + api_create_infra_envs_results.json.id }}/hosts"
+  delay: 10
+  register: api_query_hosts_results
+  retries: 180
+  until:
+    - api_query_hosts_results.json is defined
+    - (api_query_hosts_results.json | count) == (_inventory_host_count | int)
+    - (api_query_hosts_results.json | json_query(_query_simple_status) | count) == (_inventory_host_count | int)
+  vars:
+    _query_simple_status: "[?status=='pending-for-input' || status=='known' || status=='installed']"
+
+- name: Combine Applicable Host Properties into Dictionary for Easy Lookup
+  ansible.builtin.set_fact:
+    _assisted_host_info: >-
+      {{
+        _assisted_host_info | default([]) +
+        [
+          {
+            'host': item.requested_hostname | split('.') | first,
+            'id': item.id,
+            'inventory': item.inventory | from_json,
+            'status': item.status,
+            'status_info': item.status_info,
+            'validations_info': item.validations_info | from_json
+          }
+        ]
+      }}
+  loop: "{{ api_query_hosts_results.json }}"

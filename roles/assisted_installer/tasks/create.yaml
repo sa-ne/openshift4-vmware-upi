@@ -1,0 +1,61 @@
+- name: Query Clusters
+  ansible.builtin.uri:
+    headers:
+      Authorization: "Bearer {{ access_token.json.access_token }}"
+    method: GET
+    status_code: 200
+    url: "{{ api_clusters_url }}"
+  register: api_query_results
+
+- name: Create "cluster" Resource
+  ansible.builtin.uri:
+    body:
+      name: "{{ cluster_name }}"
+      high_availability_mode: "{{ high_availability_mode }}"
+      openshift_version: "{{ openshift_y_release }}"
+      pull_secret: '{{ pull_secret | from_json | to_json }}'
+      base_dns_domain: "{{ base_dns_domain }}"
+      cpu_architecture: "{{ cpu_architecture }}"
+      disk_encryption: "{{ disk_encryption }}"
+    body_format: json
+    headers:
+      Authorization: "Bearer {{ access_token.json.access_token }}"
+    method: POST
+    status_code: 201
+    url: "{{ api_clusters_url }}"
+  register: api_create_cluster_results
+
+- name: Set cluster_id Fact
+  ansible.builtin.set_fact:
+    cluster_id: "{{ api_create_cluster_results.json.id }}"
+
+- name: Debug cluster_id Fact
+  ansible.builtin.debug:
+    var: cluster_id
+
+- name: Write cluster_id to Artifact Directory
+  ansible.builtin.copy:
+    content: "{{ cluster_id }}"
+    dest: "{{ artifact_directory }}/cluster-id"
+    mode: "0644"
+
+- name: Create infra-env Resource
+  ansible.builtin.uri:
+    body: "{{ lookup('ansible.builtin.template', 'templates/infra-envs.j2') }}"
+    body_format: json
+    headers:
+      Authorization: "Bearer {{ access_token.json.access_token }}"
+    method: POST
+    status_code: 201
+    url: "{{ api_infra_envs_url }}"
+  register: api_create_infra_envs_results
+
+- name: Debug infra_env_id
+  ansible.builtin.debug:
+    msg: "{{ api_create_infra_envs_results.json.id }}"
+
+- name: Write infra_env_id to Artifact Directory
+  ansible.builtin.copy:
+    content: "{{ api_create_infra_envs_results.json.id }}"
+    dest: "{{ artifact_directory }}/infra-env-id"
+    mode: "0644"

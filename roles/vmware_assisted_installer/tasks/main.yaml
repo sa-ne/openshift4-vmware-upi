@@ -1,0 +1,11 @@
+- name: Import Create Tasks
+  ansible.builtin.import_tasks:
+    file: create.yaml
+  when:
+    - _vmware_assisted_installer_action == "create"
+
+- name: Import Boot Tasks
+  ansible.builtin.import_tasks:
+    file: boot.yaml
+  when:
+    - _vmware_assisted_installer_action == "boot"

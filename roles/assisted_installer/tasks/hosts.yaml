@@ -1,0 +1,30 @@
+- name: Query Hosts
+  ansible.builtin.uri:
+    headers:
+      Authorization: "Bearer {{ access_token.json.access_token }}"
+    method: GET
+    status_code: 200
+    url: "{{ api_infra_envs_url + api_create_infra_envs_results.json.id }}/hosts"
+  register: api_query_hosts_results
+
+- name: Reset Variable
+  ansible.builtin.set_fact:
+    _assisted_host_info: []
+
+- name: Combine Applicable Host Properties into Dictionary for Easy Lookup
+  ansible.builtin.set_fact:
+    _assisted_host_info: >-
+      {{
+        _assisted_host_info +
+        [
+          {
+            'host': item.requested_hostname | split('.') | first,
+            'id': item.id,
+            'inventory': item.inventory | from_json,
+            'status': item.status,
+            'status_info': item.status_info,
+            'validations_info': item.validations_info | from_json
+          }
+        ]
+      }}
+  loop: "{{ api_query_hosts_results.json }}"

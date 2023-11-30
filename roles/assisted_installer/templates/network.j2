@@ -1,0 +1,32 @@
+{
+  "api_vips": [
+    {
+      "ip": "{{ vips.api }}",
+      "cluster_id": "{{ cluster_id }}"
+    }
+  ],
+  "api_vip": "{{ vips.api }}",
+  "ingress_vips": [
+    {
+      "ip": "{{ vips.ingress }}",
+      "cluster_id": "{{ cluster_id }}"
+    }
+  ],
+  "ingress_vip": "{{ vips.ingress }}",
+  "ssh_public_key": "{{ ssh_authorized_key }}",
+  "vip_dhcp_allocation": false,
+  "network_type": "{{ network_type }}",
+  "machine_networks": [],
+  "cluster_networks": [
+    {
+      "cidr": "10.128.0.0/14",
+      "host_prefix": 23
+    }
+  ],
+  "service_networks": [
+    {
+      "cidr": "172.30.0.0/16"
+    }
+  ],
+  "user_managed_networking": false
+}

@@ -1,0 +1,64 @@
+- name: Generate Access Token
+  ansible.builtin.uri:
+    body:
+      client_id: rhsm-api
+      grant_type: refresh_token
+      refresh_token: "{{ offline_token }}"
+    body_format: form-urlencoded
+    method: POST
+    url: "{{ redhat_sso_url }}"
+  register: access_token
+
+- name: Import Create Tasks
+  ansible.builtin.include_tasks:
+    file: create.yaml
+  when:
+    - _assisted_installer_action == "create"
+
+- name: Import Delete Tasks
+  ansible.builtin.include_tasks:
+    file: delete.yaml
+  when:
+    - _assisted_installer_action == "delete"
+
+- name: Import Host Wait Tasks
+  ansible.builtin.include_tasks:
+    file: host-wait.yaml
+  when:
+    - _assisted_installer_action == "host-wait"
+
+- name: Import Host Role Tasks
+  ansible.builtin.include_tasks:
+    file: host-role.yaml
+  when:
+    - _assisted_installer_action == "host-role"
+
+- name: Import Storage Tasks
+  ansible.builtin.include_tasks:
+    file: storage.yaml
+  when:
+    - _assisted_installer_action == "storage"
+
+- name: Import Network Tasks
+  ansible.builtin.include_tasks:
+    file: network.yaml
+  when:
+    - _assisted_installer_action == "network"
+
+- name: Import Install Tasks
+  ansible.builtin.include_tasks:
+    file: install.yaml
+  when:
+    - _assisted_installer_action == "install"
+
+- name: Import Install Wait Tasks
+  ansible.builtin.include_tasks:
+    file: install-wait.yaml
+  when:
+    - _assisted_installer_action == "install-wait"
+
+- name: Save Credentials
+  ansible.builtin.include_tasks:
+    file: credentials.yaml
+  when:
+    - _assisted_installer_action == "credentials"

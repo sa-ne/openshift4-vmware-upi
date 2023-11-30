@@ -1,0 +1,9 @@
+- name: Update Cluster Networking
+  ansible.builtin.uri:
+    body: "{{ lookup('ansible.builtin.template', 'templates/network.j2') }}"
+    body_format: json
+    headers:
+      Authorization: "Bearer {{ access_token.json.access_token }}"
+    method: PATCH
+    status_code: 201
+    url: "{{ api_clusters_url + cluster_id }}"

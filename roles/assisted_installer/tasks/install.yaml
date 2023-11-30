@@ -1,0 +1,35 @@
+- name: Wait For Install Ready
+  block:
+    - name: Generate Access Token
+      ansible.builtin.uri:
+        body:
+          client_id: rhsm-api
+          grant_type: refresh_token
+          refresh_token: "{{ offline_token }}"
+        body_format: form-urlencoded
+        method: POST
+        url: "{{ redhat_sso_url }}"
+      register: access_token
+
+    - name: Query Cluster Status
+      ansible.builtin.uri:
+        headers:
+          Authorization: "Bearer {{ access_token.json.access_token }}"
+        method: GET
+        status_code: 200
+        url: "{{ api_clusters_url + cluster_id }}"
+      delay: 30
+      register: api_query_cluster_results
+      retries: 60
+      until:
+        - api_query_cluster_results.json is defined
+        - api_query_cluster_results.json.status is defined
+        - api_query_cluster_results.json.status == "ready"
+
+- name: Initiate Cluster Install
+  ansible.builtin.uri:
+    headers:
+      Authorization: "Bearer {{ access_token.json.access_token }}"
+    method: POST
+    status_code: 202
+    url: "{{ api_clusters_url + cluster_id }}/actions/install"

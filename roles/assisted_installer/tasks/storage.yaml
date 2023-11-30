@@ -1,0 +1,54 @@
+- name: Lookup Installation Disks From Inventory
+  vars:
+    _query: "[?boot==`true`].size_gb"
+  ansible.builtin.set_fact:
+    _boot_disk_size: >-
+      {{
+        _boot_disk_size | default([]) +
+        [
+          {
+            'host': item,
+            'size_in_bytes': (hostvars[item].disks | json_query(_query) | first) * (1024 | ansible.builtin.pow(3)) | int
+          }
+        ]
+      }}
+  loop: "{{ groups[provision_group] }}"
+
+- name: Debug _boot_disk_size
+  ansible.builtin.debug:
+    var: _boot_disk_size
+
+- name: Build Host/Disk By ID Dictionary
+  vars:
+    _query_eligible: "[?installation_eligibility.eligible==`true`]"
+    _query_host_id: "[?host=='{{ item.host }}'].id"
+    _query_inventory: "[?host=='{{ item.host }}'].inventory.disks[]"
+    _query_size: "[?size_bytes==`{{ item.size_in_bytes }}`].by_id"
+  ansible.builtin.set_fact:
+    _boot_disks: >-
+      {{
+        _boot_disks | default([]) +
+        [
+          {
+            'host': item.host,
+            'id': _assisted_host_info | json_query(_query_host_id) | first,
+            'disk_by_id': _assisted_host_info | json_query(_query_inventory) | json_query(_query_eligible) | json_query(_query_size) | first
+          }
+        ]
+      }}
+  loop: "{{ _boot_disk_size }}"
+
+- name: Debug _boot_disks
+  ansible.builtin.debug:
+    var: _boot_disks
+
+- name: Set Boot Disks
+  ansible.builtin.uri:
+    body: "{{ lookup('ansible.builtin.template', 'templates/boot-disk.j2') }}"
+    body_format: json
+    headers:
+      Authorization: "Bearer {{ access_token.json.access_token }}"
+    method: PATCH
+    status_code: 201
+    url: "{{ api_infra_envs_url + api_create_infra_envs_results.json.id }}/hosts/{{ item.id }}"
+  loop: "{{ _boot_disks }}"

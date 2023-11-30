@@ -1,0 +1,45 @@
+{% macro static_network_config(ip, dns, gateway) -%}
+interfaces:
+  - name: eth0
+    type: ethernet
+    state: up
+    ipv4:
+      address:
+        - ip: {{ ip }}
+          prefix-length: 24
+      enabled: true
+      dhcp: false
+dns-resolver:
+  config:
+    server:
+      - {{ dns }}
+routes:
+  config:
+    - destination: 0.0.0.0/0
+      next-hop-address: {{ gateway }}
+      next-hop-interface: eth0
+      table-id: 254
+{%- endmacro %}
+{
+  "additional_trust_bundle": "{{ additional_trust_bundle | default('') | regex_replace('\\n', '\\\\n') }}",
+  "cpu_architecture": "x86_64",
+  "cluster_id": "{{ cluster_id }}",
+  "image_type": "{{ discovery_iso_type }}",
+  "name": "prime_infra-env",
+  "openshift_version": "{{ openshift_y_release }}",
+  "pull_secret": "{{ pull_secret | from_json | to_json  | regex_replace('\"', '\\\"') }}",
+  "ssh_authorized_key": "{{ ssh_authorized_key }}",
+  "static_network_config": [
+{% for i in mac_ip_dict %}
+    {
+      "network_yaml": "{{ static_network_config(i.ip, i.dns, i.gateway) | regex_replace('\\n', '\\\\n') }}",
+      "mac_interface_map": [
+        {
+          "mac_address": "{{ i.mac }}",
+          "logical_nic_name": "eth0"
+        }
+      ]
+    }{{ "," if not loop.last else "" }}
+{% endfor %}
+  ]
+}

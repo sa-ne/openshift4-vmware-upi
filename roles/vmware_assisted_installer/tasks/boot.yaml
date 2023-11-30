@@ -1,0 +1,104 @@
+- name: Generate ISO File Name
+  ansible.builtin.set_fact:
+    iso_file_name: "{{ cluster_name }}-{{ api_create_infra_envs_results.json.id }}-{{ discovery_iso_type }}.iso"
+
+- name: Download Discovery ISO
+  ansible.builtin.get_url:
+    dest: "{{ discovery_iso_download_path }}/{{ iso_file_name }}"
+    url: "{{ api_create_infra_envs_results.json.download_url }}"
+    mode: "0600"
+
+- name: Upload Discovery ISO to Datastore
+  community.vmware.vsphere_copy:
+    datacenter: "{{ vcenter_datacenter }}"
+    datastore: "{{ discovery_iso_datastore }}"
+    hostname: "{{ vcenter_hostname }}"
+    password: "{{ vcenter_password }}"
+    path: "{{ iso_file_name }}"
+    src: "{{ discovery_iso_download_path }}/{{ iso_file_name }}"
+    username: "{{ vcenter_username }}"
+    validate_certs: "{{ validate_certs }}"
+
+- name: Get VM Facts
+  community.vmware.vmware_vm_info:
+    hostname: "{{ vcenter_hostname }}"
+    password: "{{ vcenter_password }}"
+    username: "{{ vcenter_username }}"
+    validate_certs: "{{ validate_certs }}"
+    vm_name: "{{ item }}.{{ base_domain }}"
+  loop: "{{ groups[provision_group] }}"
+  register: vmware_vm_info_results
+
+- name: Debug vmware_vm_info_results
+  ansible.builtin.debug:
+    var: vmware_vm_info_results
+
+- name: Generate vCenter Session Token
+  ansible.builtin.uri:
+    body_format: json
+    method: POST
+    return_content: true
+    url: "https://{{ vcenter_hostname }}/rest/com/vmware/cis/session"
+    url_password: "{{ vcenter_password }}"
+    url_username: "{{ vcenter_username }}"
+    validate_certs: "{{ validate_certs }}"
+  register: vcenter_session_token_response
+
+- name: Set Session Token Fact
+  ansible.builtin.set_fact:
+    vcenter_session_token: "{{ vcenter_session_token_response.json.value }}"
+
+# Not supported in community.vmware collection
+- name: Attach SATA Controller to VM Using vCenter REST API
+  ansible.builtin.uri:
+    body_format: json
+    body:
+      bus: 0
+      pci_slot_number: 0
+      type: AHCI
+    headers:
+      vmware-api-session-id: "{{ vcenter_session_token }}"
+    method: POST
+    return_content: true
+    status_code:
+      - 201
+    url: "https://{{ vcenter_hostname }}/api/vcenter/vm/{{ item.virtual_machines[0].moid }}/hardware/adapter/sata"
+    validate_certs: "{{ validate_certs }}"
+  loop: "{{ vmware_vm_info_results.results }}"
+
+# Not supported in community.vmware collection
+- name: Attach CD-ROM to SATA Controller Using vCenter REST API
+  ansible.builtin.uri:
+    body_format: json
+    body:
+      allow_guest_control: false
+      backing:
+        iso_file: "[{{ discovery_iso_datastore }}] {{ iso_file_name }}"
+        type: ISO_FILE
+      sata:
+        bus: 0
+        unit: 0
+      start_connected: true
+      type: SATA
+    headers:
+      vmware-api-session-id: "{{ vcenter_session_token }}"
+    method: POST
+    return_content: true
+    status_code:
+      - 201
+    url: "https://{{ vcenter_hostname }}/api/vcenter/vm/{{ item.virtual_machines[0].moid }}/hardware/cdrom"
+    validate_certs: "{{ validate_certs }}"
+  loop: "{{ vmware_vm_info_results.results }}"
+
+- name: Boot VMs with Discovery ISO
+  community.vmware.vmware_guest:
+    cluster: "{{ vcenter_cluster }}"
+    datacenter: "{{ vcenter_datacenter }}"
+    datastore: "{{ hostvars[item].datastore }}"
+    hostname: "{{ vcenter_hostname }}"
+    name: "{{ item }}.{{ base_domain }}"
+    password: "{{ vcenter_password }}"
+    state: poweredon
+    username: "{{ vcenter_username }}"
+    validate_certs: "{{ validate_certs }}"
+  loop: "{{ groups[provision_group] }}"

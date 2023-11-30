@@ -1,0 +1,8 @@
+- name: Delete "cluster" Resource
+  ansible.builtin.uri:
+    headers:
+      Authorization: "Bearer {{ access_token.json.access_token }}"
+    method: DELETE
+    status_code: 204
+    url: "{{ api_clusters_url }}/{{ lookup('ansible.builtin.file', artifact_directory + '/cluster-id') }}"
+  register: api_create_cluster_results
